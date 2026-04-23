@@ -1,70 +1,37 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-
-import java.time.LocalDate;
+import jakarta.persistence.*;
 
 @Entity
+@DiscriminatorValue("advocacia")
 public class AdvocaciaEntity extends UsuarioEntity {
 
-    private String nomeEscritorio;
+    @Column(unique = true)
+    private String cnpj;
+
+    @Column(name = "nome_fantasia")
+    private String nomeFantasia;
+
+    @Column(name = "razao_social")
+    private String razaoSocial;
+
+    private String representante;
+
+    @Column(unique = true)
     private String oab;
 
-    public AdvocaciaEntity() {}
+    public String getCnpj() { return cnpj; }
+    public void setCnpj(String cnpj) { this.cnpj = cnpj; }
 
-    public AdvocaciaEntity(
-            String nomeEscritorio,
-            String oab
-    ) {
-        this.nomeEscritorio = nomeEscritorio;
-        this.oab = oab;
-    }
+    public String getNomeFantasia() { return nomeFantasia; }
+    public void setNomeFantasia(String nomeFantasia) { this.nomeFantasia = nomeFantasia; }
 
-    public AdvocaciaEntity(
-            Integer id, String nome,
-            String email,
-            LocalDate dataCadastro,
-            String fotoPerfil,
-            String senhaHash,
-            String endereco,
-            String telefone,
-            String nomeEscritorio,
-            String oab
-    ) {
-        super(id, nome, email, dataCadastro, fotoPerfil, senhaHash, endereco, telefone);
-        this.nomeEscritorio = nomeEscritorio;
-        this.oab = oab;
-    }
+    public String getRazaoSocial() { return razaoSocial; }
+    public void setRazaoSocial(String razaoSocial) { this.razaoSocial = razaoSocial; }
 
-    public AdvocaciaEntity(
-            String nome,
-            String email,
-            String telefone,
-            String endereco,
-            String fotoPerfil,
-            String senhaHash,
-            LocalDate dataCadastro,
-            String nomeEscritorio,
-            String oab
-    ) {
-        super(nome, email, telefone, endereco, fotoPerfil, senhaHash, dataCadastro);
-        this.nomeEscritorio = nomeEscritorio;
-        this.oab = oab;
-    }
+    public String getRepresentante() { return representante; }
+    public void setRepresentante(String representante) { this.representante = representante; }
 
-    public String getNomeEscritorio() {
-        return nomeEscritorio;
-    }
-
-    public void setNomeEscritorio(String nomeEscritorio) {
-        this.nomeEscritorio = nomeEscritorio;
-    }
-
-    public String getOab() {
-        return oab;
-    }
-
-    public void setOab(String oab) {
-        this.oab = oab;
-    }
+    public String getOab() { return oab; }
+    public void setOab(String oab) { this.oab = oab; }
 }

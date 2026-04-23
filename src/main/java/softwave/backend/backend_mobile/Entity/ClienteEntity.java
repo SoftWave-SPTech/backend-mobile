@@ -1,53 +1,20 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-
-import java.time.LocalDate;
+import jakarta.persistence.*;
 
 @Entity
+@DiscriminatorValue("cliente")
 public class ClienteEntity extends UsuarioEntity {
+
+    @Column(unique = true)
     private String cpf;
 
-    public ClienteEntity() {}
+    @Column(unique = true)
+    private String rg;
 
-    public ClienteEntity(String cpf) {
-        this.cpf = cpf;
-    }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
-    public ClienteEntity(
-            Integer id,
-            String nome,
-            String email,
-            LocalDate dataCadastro,
-            String fotoPerfil,
-            String senhaHash,
-            String endereco,
-            String telefone,
-            String cpf
-    ) {
-        super(id, nome, email, dataCadastro, fotoPerfil, senhaHash, endereco, telefone);
-        this.cpf = cpf;
-    }
-
-    public ClienteEntity(
-            String nome,
-            String email,
-            String telefone,
-            String endereco,
-            String fotoPerfil,
-            String senhaHash,
-            LocalDate dataCadastro,
-            String cpf
-    ) {
-        super(nome, email, telefone, endereco, fotoPerfil, senhaHash, dataCadastro);
-        this.cpf = cpf;
-    }
-
-    public String getCpf() {
-        return cpf;
-    }
-
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
+    public String getRg() { return rg; }
+    public void setRg(String rg) { this.rg = rg; }
 }
