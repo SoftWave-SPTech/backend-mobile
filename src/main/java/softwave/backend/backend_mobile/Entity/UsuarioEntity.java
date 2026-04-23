@@ -1,127 +1,97 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-
-import java.time.LocalDate;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
-public class UsuarioEntity {
+@Table(name = "usuario")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "tipo_entidade")
+public abstract class UsuarioEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
     private String nome;
+
+    @Column(nullable = false, unique = true)
     private String email;
+
     private String telefone;
-    private String endereco;
-    private LocalDate dataCadastro;
-    private String senhaHash;
-    private String fotoPerfil;
 
-    public UsuarioEntity() {}
+    @Column(name = "senha", nullable = false)
+    private String senha;
 
-    public UsuarioEntity(
-            Integer id,
-            String nome,
-            String email,
-            LocalDate dataCadastro,
-            String fotoPerfil,
-            String senhaHash,
-            String endereco,
-            String telefone
-    ) {
-        this.id = id;
-        this.nome = nome;
-        this.email = email;
-        this.dataCadastro = dataCadastro;
-        this.fotoPerfil = fotoPerfil;
-        this.senhaHash = senhaHash;
-        this.endereco = endereco;
-        this.telefone = telefone;
-    }
+    @Column(name = "foto")
+    private String foto;
 
-    public UsuarioEntity(
-            String nome,
-            String email,
-            String telefone,
-            String endereco,
-            String fotoPerfil,
-            String senhaHash,
-            LocalDate dataCadastro
-    ) {
-        this.nome = nome;
-        this.email = email;
-        this.telefone = telefone;
-        this.endereco = endereco;
-        this.fotoPerfil = fotoPerfil;
-        this.senhaHash = senhaHash;
-        this.dataCadastro = dataCadastro;
-    }
+    @Column(name = "tipo_usuario")
+    private String tipoUsuario;
 
-    public Integer getId() {
-        return id;
-    }
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
+    // ENDEREÇO
+    private String logradouro;
+    private String numero;
+    private String bairro;
+    private String cidade;
+    private String cep;
+    private String complemento;
 
-    public String getNome() {
-        return nome;
-    }
+    private Boolean ativo;
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+    @Column(name = "tentativas_falhas_login")
+    private Integer tentativasFalhasLogin;
 
-    public String getTelefone() {
-        return telefone;
-    }
+    // GETTERS E SETTERS
 
-    public void setTelefone(String telefone) {
-        this.telefone = telefone;
-    }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
-    public String getSenhaHash() {
-        return senhaHash;
-    }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
 
-    public void setSenhaHash(String senhaHash) {
-        this.senhaHash = senhaHash;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getFotoPerfil() {
-        return fotoPerfil;
-    }
+    public String getTelefone() { return telefone; }
+    public void setTelefone(String telefone) { this.telefone = telefone; }
 
-    public void setFotoPerfil(String fotoPerfil) {
-        this.fotoPerfil = fotoPerfil;
-    }
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
 
-    public LocalDate getDataCadastro() {
-        return dataCadastro;
-    }
+    public String getFoto() { return foto; }
+    public void setFoto(String foto) { this.foto = foto; }
 
-    public void setDataCadastro(LocalDate dataCadastro) {
-        this.dataCadastro = dataCadastro;
-    }
+    public String getTipoUsuario() { return tipoUsuario; }
+    public void setTipoUsuario(String tipoUsuario) { this.tipoUsuario = tipoUsuario; }
 
-    public String getEndereco() {
-        return endereco;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setEndereco(String endereco) {
-        this.endereco = endereco;
-    }
+    public String getLogradouro() { return logradouro; }
+    public void setLogradouro(String logradouro) { this.logradouro = logradouro; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getNumero() { return numero; }
+    public void setNumero(String numero) { this.numero = numero; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public String getBairro() { return bairro; }
+    public void setBairro(String bairro) { this.bairro = bairro; }
+
+    public String getCidade() { return cidade; }
+    public void setCidade(String cidade) { this.cidade = cidade; }
+
+    public String getCep() { return cep; }
+    public void setCep(String cep) { this.cep = cep; }
+
+    public String getComplemento() { return complemento; }
+    public void setComplemento(String complemento) { this.complemento = complemento; }
+
+    public Boolean getAtivo() { return ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
+
+    public Integer getTentativasFalhasLogin() { return tentativasFalhasLogin; }
+    public void setTentativasFalhasLogin(Integer tentativasFalhasLogin) { this.tentativasFalhasLogin = tentativasFalhasLogin; }
 }
