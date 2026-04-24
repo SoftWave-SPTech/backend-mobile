@@ -1,6 +1,7 @@
 package softwave.backend.backend_mobile.Controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import softwave.backend.backend_mobile.DTO.UsuarioResponseDTO;
@@ -16,22 +17,26 @@ public class UsuarioController {
     private UsuarioService service;
 
     @GetMapping("/{id}")
-    public UsuarioResponseDTO buscar(@PathVariable Integer id) {
-        return service.buscarPorId(id);
+    public ResponseEntity<UsuarioResponseDTO> buscar(@PathVariable Integer id) {
+        UsuarioResponseDTO response = service.buscarPorId(id);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
-    public UsuarioResponseDTO atualizar(
+    public ResponseEntity<UsuarioResponseDTO> atualizar(
             @PathVariable Integer id,
             @RequestBody UsuarioUpdateDTO dto) {
-        return service.atualizar(id, dto);
+
+        UsuarioResponseDTO response = service.atualizar(id, dto);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}/foto")
-    public UsuarioResponseDTO uploadFoto(
+    public ResponseEntity<UsuarioResponseDTO> uploadFoto(
             @PathVariable Integer id,
             @RequestParam("file") MultipartFile file) throws Exception {
 
-        return service.uploadFoto(id, file);
+        UsuarioResponseDTO response = service.uploadFoto(id, file);
+        return ResponseEntity.ok(response);
     }
 }
