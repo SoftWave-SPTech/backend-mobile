@@ -1,11 +1,9 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 public class ProcessoEntity {
@@ -19,6 +17,13 @@ public class ProcessoEntity {
     private LocalDate dataInicio;
     private LocalDate dataFim;
     private String categoria;
+
+    @ManyToOne
+    @JoinColumn(name = "cliente_id")
+    private ClienteEntity cliente;
+
+    @OneToMany(mappedBy = "processo")
+    private List<HonorarioEntity> honorarios;
 
     public ProcessoEntity() {
     }
@@ -67,6 +72,14 @@ public class ProcessoEntity {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public ClienteEntity getCliente() {
+        return cliente;
+    }
+
+    public void setCliente(ClienteEntity cliente) {
+        this.cliente = cliente;
     }
 
     public String getNumeroProcesso() {
@@ -123,5 +136,13 @@ public class ProcessoEntity {
 
     public void setCategoria(String categoria) {
         this.categoria = categoria;
+    }
+
+    public List<HonorarioEntity> getHonorarios() {
+        return honorarios;
+    }
+
+    public void setHonorarios(List<HonorarioEntity> honorarios) {
+        this.honorarios = honorarios;
     }
 }
