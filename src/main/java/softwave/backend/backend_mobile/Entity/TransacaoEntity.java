@@ -1,11 +1,10 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 public class TransacaoEntity {
@@ -15,14 +14,22 @@ public class TransacaoEntity {
     private String titulo;
     private Double valor;
     private String tipo;
-    private String statusFinanceiro;
-    private String statusAprovacao;
+    private StatusFinanceiro statusFinanceiro;
+    private StatusAprovacao statusAprovacao;
     private LocalDate dataEmissao;
     private LocalDate dataVencimento;
     private LocalDate dataPagamento;
     private String descricao;
     private String observacoes;
     private String contraparte;
+
+    @ManyToOne
+    @JoinColumn(name = "honorario_id")
+    private HonorarioEntity honorario;
+
+    @OneToMany(mappedBy = "transacao")
+    @JsonIgnore
+    private List<ComprovanteEntity> comprovantes;
 
     public TransacaoEntity() {
     }
@@ -32,8 +39,8 @@ public class TransacaoEntity {
             String titulo,
             Double valor,
             String tipo,
-            String statusFinanceiro,
-            String statusAprovacao,
+            StatusFinanceiro statusFinanceiro,
+            StatusAprovacao statusAprovacao,
             LocalDate dataEmissao,
             LocalDate dataVencimento,
             LocalDate dataPagamento,
@@ -59,8 +66,8 @@ public class TransacaoEntity {
             String titulo,
             Double valor,
             String tipo,
-            String statusFinanceiro,
-            String statusAprovacao,
+            StatusFinanceiro statusFinanceiro,
+            StatusAprovacao statusAprovacao,
             LocalDate dataEmissao,
             LocalDate dataVencimento,
             LocalDate dataPagamento,
@@ -105,19 +112,19 @@ public class TransacaoEntity {
         this.valor = valor;
     }
 
-    public String getStatusAprovacao() {
+    public StatusAprovacao getStatusAprovacao() {
         return statusAprovacao;
     }
 
-    public void setStatusAprovacao(String statusAprovacao) {
+    public void setStatusAprovacao(StatusAprovacao statusAprovacao) {
         this.statusAprovacao = statusAprovacao;
     }
 
-    public String getStatusFinanceiro() {
+    public StatusFinanceiro getStatusFinanceiro() {
         return statusFinanceiro;
     }
 
-    public void setStatusFinanceiro(String statusFinanceiro) {
+    public void setStatusFinanceiro(StatusFinanceiro statusFinanceiro) {
         this.statusFinanceiro = statusFinanceiro;
     }
 
@@ -175,5 +182,21 @@ public class TransacaoEntity {
 
     public void setDataEmissao(LocalDate dataEmissao) {
         this.dataEmissao = dataEmissao;
+    }
+
+    public HonorarioEntity getHonorario() {
+        return honorario;
+    }
+
+    public void setHonorario(HonorarioEntity honorario) {
+        this.honorario = honorario;
+    }
+
+    public List<ComprovanteEntity> getComprovantes() {
+        return comprovantes;
+    }
+
+    public void setComprovantes(List<ComprovanteEntity> comprovantes) {
+        this.comprovantes = comprovantes;
     }
 }

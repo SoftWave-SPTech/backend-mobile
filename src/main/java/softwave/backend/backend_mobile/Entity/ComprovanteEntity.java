@@ -1,9 +1,6 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDate;
 
@@ -15,6 +12,11 @@ public class ComprovanteEntity {
     private String nomeArquivo;
     private String caminhoArquivo;
     private LocalDate dataUpload;
+    private String driveFileId;
+
+    @ManyToOne
+    @JoinColumn(name = "transacao_id")
+    private TransacaoEntity transacao;
 
     public ComprovanteEntity() {
     }
@@ -71,5 +73,21 @@ public class ComprovanteEntity {
 
     public void setDataUpload(LocalDate dataUpload) {
         this.dataUpload = dataUpload;
+    }
+
+    public TransacaoEntity getTransacao() {
+        return transacao;
+    }
+
+    public void setTransacao(TransacaoEntity transacao) {
+        this.transacao = transacao;
+    }
+
+    public String getDriveFileId() {
+        return driveFileId;
+    }
+
+    public void setDriveFileId(String driveFileId) {
+        this.driveFileId = driveFileId;
     }
 }

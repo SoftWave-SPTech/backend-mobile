@@ -1,11 +1,9 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 public class HonorarioEntity {
@@ -18,6 +16,13 @@ public class HonorarioEntity {
     private LocalDate dataFim;
     private String status;
     private Integer parcelas;
+
+    @OneToMany(mappedBy = "honorario")
+    private List<TransacaoEntity> transacoes;
+
+    @ManyToOne
+    @JoinColumn(name = "processo_id")
+    private ProcessoEntity processo;
 
     public HonorarioEntity() {
     }
@@ -110,5 +115,21 @@ public class HonorarioEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public List<TransacaoEntity> getTransacoes() {
+        return transacoes;
+    }
+
+    public void setTransacoes(List<TransacaoEntity> transacoes) {
+        this.transacoes = transacoes;
+    }
+
+    public ProcessoEntity getProcesso() {
+        return processo;
+    }
+
+    public void setProcesso(ProcessoEntity processo) {
+        this.processo = processo;
     }
 }
