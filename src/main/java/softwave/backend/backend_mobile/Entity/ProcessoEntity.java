@@ -1,65 +1,47 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "processo")
 public class ProcessoEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Column(name = "numero_processo")
     private String numeroProcesso;
-    private String titulo;
+
+    @Column
     private String descricao;
-    private String status;
-    private LocalDate dataInicio;
+
+    @Column
+    private String area;
+
+    @Column
+    private String classe;
+
+    @Column
+    private String vara;
+
+    @Column
+    private String foro;
+
+    @Column(name = "data_fim")
     private LocalDate dataFim;
+
+    @Column(name = "categoria", length = 100)
     private String categoria;
 
-    public ProcessoEntity() {
-    }
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    public ProcessoEntity(
-            Integer id,
-            String numeroProcesso,
-            String titulo,
-            String status,
-            String descricao,
-            LocalDate dataInicio,
-            LocalDate dataFim,
-            String categoria
-    ) {
-        this.id = id;
-        this.numeroProcesso = numeroProcesso;
-        this.titulo = titulo;
-        this.status = status;
-        this.descricao = descricao;
-        this.dataInicio = dataInicio;
-        this.dataFim = dataFim;
-        this.categoria = categoria;
-    }
-
-    public ProcessoEntity(
-            String numeroProcesso,
-            String titulo,
-            String descricao,
-            String status,
-            LocalDate dataInicio,
-            LocalDate dataFim,
-            String categoria
-    ) {
-        this.numeroProcesso = numeroProcesso;
-        this.titulo = titulo;
-        this.descricao = descricao;
-        this.status = status;
-        this.dataInicio = dataInicio;
-        this.dataFim = dataFim;
-        this.categoria = categoria;
-    }
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     public Integer getId() {
         return id;
@@ -77,14 +59,6 @@ public class ProcessoEntity {
         this.numeroProcesso = numeroProcesso;
     }
 
-    public String getTitulo() {
-        return titulo;
-    }
-
-    public void setTitulo(String titulo) {
-        this.titulo = titulo;
-    }
-
     public String getDescricao() {
         return descricao;
     }
@@ -93,20 +67,36 @@ public class ProcessoEntity {
         this.descricao = descricao;
     }
 
-    public String getStatus() {
-        return status;
+    public String getArea() {
+        return area;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setArea(String area) {
+        this.area = area;
     }
 
-    public LocalDate getDataInicio() {
-        return dataInicio;
+    public String getClasse() {
+        return classe;
     }
 
-    public void setDataInicio(LocalDate dataInicio) {
-        this.dataInicio = dataInicio;
+    public void setClasse(String classe) {
+        this.classe = classe;
+    }
+
+    public String getVara() {
+        return vara;
+    }
+
+    public void setVara(String vara) {
+        this.vara = vara;
+    }
+
+    public String getForo() {
+        return foro;
+    }
+
+    public void setForo(String foro) {
+        this.foro = foro;
     }
 
     public LocalDate getDataFim() {
@@ -123,5 +113,29 @@ public class ProcessoEntity {
 
     public void setCategoria(String categoria) {
         this.categoria = categoria;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    /** Exibição no app: número ou descrição curta */
+    public String getTituloExibicao() {
+        if (numeroProcesso != null && !numeroProcesso.isBlank()) {
+            return numeroProcesso;
+        }
+        return descricao != null ? descricao : "Processo #" + id;
     }
 }

@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: SoftWave-Finance
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/softwaveteste?createDatabaseIfNotExist=true&useTimezone=true&serverTimezone=UTC
+    username: root
+    password: ${MYSQL_PASSWORD:09241724}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+# Mesmo segredo e algoritmo da API-AUTH-MAIL (tokens HS512 com JJWT + chave HMAC longa)
+jwt:
+  secret: ${JWT_SECRET:RXhpc3RlIHVtYSB0ZW9yaWEgcXVlIGRpeiBxdWUsIHNlIHVtIGRpYSBhbGd16W0gZGVzY29icmlyIGV4YXRhbWVudGUgcGFyYSBxdWUgc2VydmUgbyBVbml2ZXJzbyBlIHBvciBxdWUgZWxlIGVzdOEgYXF1aSwgZWxlIGRlc2FwYXJlY2Vy4SBpbnN0YW50YW5lYW1lbnRlIGUgc2Vy4SBzdWJzdGl0de1kbyBwb3IgYWxnbyBhaW5kYSBtYWlzIGVzdHJhbmhvIGUgaW5leHBsaWPhdmVsLiBFeGlzdGUgdW1hIHNlZ3VuZGEgdGVvcmlhIHF1ZSBkaXogcXVlIGlzc28gauEgYWNvbnRlY2V1Li4u}
+
+# Header X-Internal-Token para /internal/** (API-IA-MOBILE)
+app:
+  security:
+    internal-token: ${INTERNAL_API_TOKEN:dev-internal-token}
+  storage:
+    upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  port: 8080
+
+logging:
+  level:
+    softwave.backend.backend_mobile.config.SecurityConfig: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+    org.springframework.web.cors: DEBUG
+
