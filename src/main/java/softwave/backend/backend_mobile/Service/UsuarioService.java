@@ -62,29 +62,77 @@ public class UsuarioService {
         UsuarioEntity u = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
 
-        u.setNome(dto.nome);
-        u.setEmail(dto.email);
-        u.setTelefone(dto.telefone);
-        u.setTipoUsuario(dto.tipoUsuario);
-
-        u.setLogradouro(dto.logradouro);
-        u.setNumero(dto.numero);
-        u.setBairro(dto.bairro);
-        u.setCidade(dto.cidade);
-        u.setCep(dto.cep);
-        u.setComplemento(dto.complemento);
-
-        if (u instanceof ClienteEntity cliente) {
-            cliente.setCpf(dto.cpf);
-            cliente.setRg(dto.rg);
+        // 🔹 CAMPOS GERAIS
+        if (dto.nome != null) {
+            u.setNome(dto.nome);
         }
 
+        if (dto.email != null) {
+            u.setEmail(dto.email);
+        }
+
+        if (dto.telefone != null) {
+            u.setTelefone(dto.telefone);
+        }
+
+        if (dto.logradouro != null) {
+            u.setLogradouro(dto.logradouro);
+        }
+
+        if (dto.numero != null) {
+            u.setNumero(dto.numero);
+        }
+
+        if (dto.bairro != null) {
+            u.setBairro(dto.bairro);
+        }
+
+        if (dto.cidade != null) {
+            u.setCidade(dto.cidade);
+        }
+
+        if (dto.cep != null) {
+            u.setCep(dto.cep);
+        }
+
+        if (dto.complemento != null) {
+            u.setComplemento(dto.complemento);
+        }
+
+        // 🔹 CLIENTE
+        if (u instanceof ClienteEntity cliente) {
+
+            if (dto.cpf != null) {
+                cliente.setCpf(dto.cpf);
+            }
+
+            if (dto.rg != null) {
+                cliente.setRg(dto.rg);
+            }
+        }
+
+        // 🔹 ADVOCACIA
         if (u instanceof AdvocaciaEntity adv) {
-            adv.setCnpj(dto.cnpj);
-            adv.setNomeFantasia(dto.nomeFantasia);
-            adv.setRazaoSocial(dto.razaoSocial);
-            adv.setRepresentante(dto.representante);
-            adv.setOab(dto.oab);
+
+            if (dto.cnpj != null) {
+                adv.setCnpj(dto.cnpj);
+            }
+
+            if (dto.nomeFantasia != null) {
+                adv.setNomeFantasia(dto.nomeFantasia);
+            }
+
+            if (dto.razaoSocial != null) {
+                adv.setRazaoSocial(dto.razaoSocial);
+            }
+
+            if (dto.representante != null) {
+                adv.setRepresentante(dto.representante);
+            }
+
+            if (dto.oab != null) {
+                adv.setOab(dto.oab);
+            }
         }
 
         repository.save(u);
