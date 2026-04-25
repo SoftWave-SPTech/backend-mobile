@@ -1,5 +1,6 @@
 package softwave.backend.backend_mobile.Service;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import softwave.backend.backend_mobile.DTO.InsightExternalRequestDTO;

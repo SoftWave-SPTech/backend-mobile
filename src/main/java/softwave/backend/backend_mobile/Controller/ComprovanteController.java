@@ -57,10 +57,10 @@ public class ComprovanteController {
         return service.anexarArquivo(transacaoId, file);
     }
 
-    @DeleteMapping("/{id}")
-    public void excluir(@PathVariable Integer id) throws Exception {
-        service.excluirComprovante(id);
-    }
+//    @DeleteMapping("/{id}")
+//    public void excluir(@PathVariable Integer id) throws Exception {
+//        service.excluirComprovante(id);
+//    }
 
     @GetMapping("/transacao/{transacaoId}")
     public List<ComprovanteResponseDTO> buscarPorTransacao(@PathVariable Integer transacaoId) {
