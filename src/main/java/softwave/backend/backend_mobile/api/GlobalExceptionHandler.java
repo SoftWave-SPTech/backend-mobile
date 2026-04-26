@@ -1,5 +1,7 @@
 package softwave.backend.backend_mobile.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -7,6 +9,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -18,6 +21,8 @@ import softwave.backend.backend_mobile.api.dto.ApiErrorBody;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiErrorBody> notFound(NotFoundException e) {
@@ -34,6 +39,12 @@ public class GlobalExceptionHandler {
         FieldError fe = e.getBindingResult().getFieldError();
         String msg = fe != null ? fe.getDefaultMessage() : "Dados inválidos";
         return err(HttpStatus.UNPROCESSABLE_ENTITY, "CAMPOS_INVALIDOS", msg);
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiErrorBody> multipart(MultipartException e) {
+        log.warn("Erro multipart: {}", e.getMessage());
+        return err(HttpStatus.UNPROCESSABLE_ENTITY, "CAMPOS_INVALIDOS", "Arquivo inválido ou ausente no upload.");
     }
 
     @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class})
@@ -53,6 +64,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorBody> generic(Exception e) {
+        log.error("Erro interno não tratado", e);
         return err(HttpStatus.INTERNAL_SERVER_ERROR, "ERRO_INTERNO", "Erro interno do servidor.");
     }
 

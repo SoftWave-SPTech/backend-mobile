@@ -22,6 +22,7 @@ import softwave.backend.backend_mobile.Repository.TransacaoRepository;
 import softwave.backend.backend_mobile.Repository.UsuarioProcessoRepository;
 import softwave.backend.backend_mobile.Repository.TransacaoSpecifications;
 import softwave.backend.backend_mobile.Repository.UsuarioRepository;
+import softwave.backend.backend_mobile.Repository.StatusHistoricoRepository;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
 import softwave.backend.backend_mobile.util.MoneyUtil;
 import softwave.backend.backend_mobile.v1.dto.TransacaoCreateRequest;
@@ -44,6 +45,8 @@ public class V1TransacaoService {
     private final LocalStorageService localStorageService;
     private final UsuarioRepository usuarioRepository;
     private final UsuarioProcessoRepository usuarioProcessoRepository;
+    private final StatusHistoricoService statusHistoricoService;
+    private final StatusHistoricoRepository statusHistoricoRepository;
 
     public V1TransacaoService(
             TransacaoRepository transacaoRepository,
@@ -53,7 +56,9 @@ public class V1TransacaoService {
             ProcessoAccessService processoAccessService,
             LocalStorageService localStorageService,
             UsuarioRepository usuarioRepository,
-            UsuarioProcessoRepository usuarioProcessoRepository
+            UsuarioProcessoRepository usuarioProcessoRepository,
+            StatusHistoricoService statusHistoricoService,
+            StatusHistoricoRepository statusHistoricoRepository
     ) {
         this.transacaoRepository = transacaoRepository;
         this.honorarioRepository = honorarioRepository;
@@ -63,6 +68,8 @@ public class V1TransacaoService {
         this.localStorageService = localStorageService;
         this.usuarioRepository = usuarioRepository;
         this.usuarioProcessoRepository = usuarioProcessoRepository;
+        this.statusHistoricoService = statusHistoricoService;
+        this.statusHistoricoRepository = statusHistoricoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -199,7 +206,10 @@ public class V1TransacaoService {
             t.setValor(MoneyUtil.fromCentavos(cent));
         }
         if (campos.containsKey("status")) {
-            t.setStatusFinanceiro(campos.get("status").toString());
+            String novo = campos.get("status").toString();
+            String anterior = t.getStatusFinanceiro();
+            t.setStatusFinanceiro(novo);
+            statusHistoricoService.registrar(t, anterior, novo, JwtPrincipalExtractor.userId(jwt), "Atualização parcial");
         }
         if (campos.containsKey("descricao")) {
             t.setDescricao(Objects.toString(campos.get("descricao"), null));
@@ -214,17 +224,22 @@ public class V1TransacaoService {
     @Transactional
     public Map<String, Object> atualizarStatus(Jwt jwt, String idStr, String novoStatus) {
         TransacaoEntity t = carregarComAcessoAdvogado(jwt, idStr);
+        String anterior = t.getStatusFinanceiro();
         t.setStatusFinanceiro(novoStatus);
         if ("pago".equalsIgnoreCase(novoStatus)) {
             t.setDataPagamento(LocalDate.now());
         }
         transacaoRepository.save(t);
+        statusHistoricoService.registrar(t, anterior, novoStatus, JwtPrincipalExtractor.userId(jwt), "Atualização de status");
         return Map.of("mensagem", "Status atualizado.", "novoStatus", novoStatus);
     }
 
     @Transactional
     public Map<String, Object> excluir(Jwt jwt, String idStr) {
         TransacaoEntity t = carregarComAcessoAdvogado(jwt, idStr);
+        // Remove dependências explícitas para evitar violação de FK (histórico/comprovante).
+        statusHistoricoRepository.deleteByTransacao_Id(t.getId());
+        comprovanteRepository.deleteByTransacao_Id(t.getId());
         transacaoRepository.delete(t);
         return Map.of("mensagem", "Transação excluída com sucesso.");
     }
@@ -241,7 +256,7 @@ public class V1TransacaoService {
         comprovanteRepository.save(c);
         return Map.of(
                 "mensagem", "Comprovante enviado com sucesso.",
-                "comprovanteUrl", "file://" + path
+                "comprovanteUrl", "/pagamentos/pag_" + t.getId() + "/comprovante"
         );
     }
 
@@ -307,7 +322,7 @@ public class V1TransacaoService {
         m.put("metodoPagamento", "PIX");
         m.put("observacoes", t.getObservacoes());
         m.put("comprovante", t.getComprovante() != null);
-        m.put("comprovanteUrl", t.getComprovante() != null ? "file://" + t.getComprovante().getCaminhoArquivo() : null);
+        m.put("comprovanteUrl", t.getComprovante() != null ? "/pagamentos/pag_" + t.getId() + "/comprovante" : null);
         m.put("criadoEm", LocalDate.now().atStartOfDay().format(DateTimeFormatter.ISO_DATE_TIME));
         m.put("atualizadoEm", LocalDate.now().atStartOfDay().format(DateTimeFormatter.ISO_DATE_TIME));
         return m;

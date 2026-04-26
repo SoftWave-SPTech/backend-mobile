@@ -27,8 +27,9 @@ public class NotificacaoV1Controller {
     }
 
     @PutMapping("/{id}/lida")
-    public Map<String, Object> lida(@AuthenticationPrincipal Jwt jwt, @PathVariable Integer id) {
-        return notificacaoService.marcarLidaAdvogado(jwt, id);
+    public Map<String, Object> lida(@AuthenticationPrincipal Jwt jwt, @PathVariable String id) {
+        int nid = id.startsWith("ntf_") ? Integer.parseInt(id.substring(4)) : Integer.parseInt(id);
+        return notificacaoService.marcarLidaAdvogado(jwt, nid);
     }
 
     @PutMapping("/marcar-todas-lidas")

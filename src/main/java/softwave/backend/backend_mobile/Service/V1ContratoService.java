@@ -31,19 +31,22 @@ public class V1ContratoService {
     private final ProcessoAccessService processoAccessService;
     private final NotificacaoRepository notificacaoRepository;
     private final UsuarioProcessoRepository usuarioProcessoRepository;
+    private final StatusHistoricoService statusHistoricoService;
 
     public V1ContratoService(
             HonorarioRepository honorarioRepository,
             TransacaoRepository transacaoRepository,
             ProcessoAccessService processoAccessService,
             NotificacaoRepository notificacaoRepository,
-            UsuarioProcessoRepository usuarioProcessoRepository
+            UsuarioProcessoRepository usuarioProcessoRepository,
+            StatusHistoricoService statusHistoricoService
     ) {
         this.honorarioRepository = honorarioRepository;
         this.transacaoRepository = transacaoRepository;
         this.processoAccessService = processoAccessService;
         this.notificacaoRepository = notificacaoRepository;
         this.usuarioProcessoRepository = usuarioProcessoRepository;
+        this.statusHistoricoService = statusHistoricoService;
     }
 
     @Transactional(readOnly = true)
@@ -58,6 +61,19 @@ public class V1ContratoService {
         List<Map<String, Object>> contratos = new ArrayList<>();
         for (HonorarioEntity h : lista) {
             Map<String, Object> c = mapContrato(h);
+            if (status != null && !status.isBlank()) {
+                String req = status.trim().toLowerCase(Locale.ROOT);
+                String cur = String.valueOf(c.get("status")).toLowerCase(Locale.ROOT);
+                if (!req.equals(cur)) {
+                    continue;
+                }
+            }
+            if (clienteId != null) {
+                String cid = String.valueOf(c.get("clienteId"));
+                if (!cid.equals("cli_" + clienteId)) {
+                    continue;
+                }
+            }
             contratos.add(c);
             long pago = ((Number) c.get("pago")).longValue();
             long total = ((Number) c.get("total")).longValue();
@@ -106,8 +122,10 @@ public class V1ContratoService {
         int tid = parsePar(parId);
         TransacaoEntity t = transacaoRepository.findById(tid).orElseThrow(() -> new NotFoundException("Parcela não encontrada"));
         processoAccessService.garantirAcessoAoProcesso(JwtPrincipalExtractor.userId(jwt), jwt, t.getHonorario().getProcesso().getId());
+        String anterior = t.getStatusFinanceiro();
         t.setStatusFinanceiro(novoStatus);
         transacaoRepository.save(t);
+        statusHistoricoService.registrar(t, anterior, novoStatus, JwtPrincipalExtractor.userId(jwt), "Atualização de parcela");
         return Map.of("mensagem", "Parcela atualizada com sucesso.");
     }
 
@@ -152,6 +170,16 @@ public class V1ContratoService {
         int progresso = total.signum() > 0
                 ? somaPago.multiply(BigDecimal.valueOf(100)).divide(total, 0, RoundingMode.HALF_UP).intValue()
                 : 0;
+        boolean encerrado = h.getDataFim() != null && h.getDataFim().isBefore(java.time.LocalDate.now());
+        String status = h.getStatus() != null ? h.getStatus().toLowerCase(Locale.ROOT) : (encerrado ? "encerrado" : "pendente");
+        if (status.equals("em-dia")) {
+            status = "pendente";
+        }
+        if (encerrado && !status.equals("cancelado")) {
+            status = "encerrado";
+        } else if (progresso >= 100 && !status.equals("cancelado")) {
+            status = "pago";
+        }
 
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", "ctr_" + h.getId());
@@ -159,13 +187,13 @@ public class V1ContratoService {
         m.put("cliente", primeiroClienteNome(p.getId()));
         m.put("processo", p.getTituloExibicao());
         m.put("tipoContrato", h.getTitulo() != null ? h.getTitulo() : "Parcelas");
-        m.put("status", h.getStatus() != null ? h.getStatus() : "em-dia");
+        m.put("status", status);
         m.put("progresso", Math.min(100, progresso));
         m.put("vencimento", h.getDataFim() != null ? h.getDataFim().toString() : null);
         m.put("total", MoneyUtil.toCentavos(total));
         m.put("pago", MoneyUtil.toCentavos(somaPago));
-        m.put("encerrado", Boolean.FALSE);
-        m.put("reprovado", Boolean.FALSE);
+        m.put("encerrado", encerrado);
+        m.put("reprovado", "reprovado".equalsIgnoreCase(status));
         return m;
     }
 

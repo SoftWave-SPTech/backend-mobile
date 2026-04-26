@@ -19,6 +19,7 @@ public interface TransacaoRepository extends JpaRepository<TransacaoEntity, Inte
     List<TransacaoEntity> findByHonorario_Processo_IdIn(Collection<Integer> processoIds);
 
     List<TransacaoEntity> findByHonorario_IdOrderByDataEmissaoAsc(Integer honorarioId);
+    List<TransacaoEntity> findByDataVencimentoBeforeAndDataPagamentoIsNull(LocalDate data);
 
     @Query("""
             select t from TransacaoEntity t

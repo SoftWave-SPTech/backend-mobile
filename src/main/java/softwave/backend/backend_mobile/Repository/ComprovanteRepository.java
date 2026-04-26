@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface ComprovanteRepository extends JpaRepository<ComprovanteEntity, Integer> {
 
     Optional<ComprovanteEntity> findByTransacao_Id(Integer transacaoId);
+    void deleteByTransacao_Id(Integer transacaoId);
 }

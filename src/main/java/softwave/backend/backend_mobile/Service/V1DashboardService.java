@@ -10,6 +10,7 @@ import softwave.backend.backend_mobile.Exception.ForbiddenException;
 import softwave.backend.backend_mobile.Repository.TransacaoRepository;
 import softwave.backend.backend_mobile.Repository.TransacaoSpecifications;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
+import softwave.backend.backend_mobile.service.ProcessoAccessService;
 import softwave.backend.backend_mobile.util.MoneyUtil;
 
 import java.math.BigDecimal;

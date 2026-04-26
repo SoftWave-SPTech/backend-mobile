@@ -4,14 +4,19 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import softwave.backend.backend_mobile.Entity.ComprovanteEntity;
 import softwave.backend.backend_mobile.Entity.HonorarioEntity;
+import softwave.backend.backend_mobile.Entity.NotificacaoEntity;
 import softwave.backend.backend_mobile.Entity.TransacaoEntity;
 import softwave.backend.backend_mobile.Entity.UsuarioEntity;
+import softwave.backend.backend_mobile.Exception.BadRequestException;
 import softwave.backend.backend_mobile.Exception.ForbiddenException;
 import softwave.backend.backend_mobile.Exception.NotFoundException;
+import softwave.backend.backend_mobile.Repository.ComprovanteRepository;
 import softwave.backend.backend_mobile.Repository.HonorarioRepository;
 import softwave.backend.backend_mobile.Repository.NotificacaoRepository;
 import softwave.backend.backend_mobile.Repository.TransacaoRepository;
+import softwave.backend.backend_mobile.Repository.UsuarioProcessoRepository;
 import softwave.backend.backend_mobile.Repository.UsuarioRepository;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
 import softwave.backend.backend_mobile.util.MoneyUtil;
@@ -30,6 +35,8 @@ public class V1ClienteFluxoService {
     private final UsuarioRepository usuarioRepository;
     private final LocalStorageService localStorageService;
     private final NotificacaoRepository notificacaoRepository;
+    private final ComprovanteRepository comprovanteRepository;
+    private final UsuarioProcessoRepository usuarioProcessoRepository;
 
     public V1ClienteFluxoService(
             ProcessoAccessService processoAccessService,
@@ -37,7 +44,9 @@ public class V1ClienteFluxoService {
             HonorarioRepository honorarioRepository,
             UsuarioRepository usuarioRepository,
             LocalStorageService localStorageService,
-            NotificacaoRepository notificacaoRepository
+            NotificacaoRepository notificacaoRepository,
+            ComprovanteRepository comprovanteRepository,
+            UsuarioProcessoRepository usuarioProcessoRepository
     ) {
         this.processoAccessService = processoAccessService;
         this.transacaoRepository = transacaoRepository;
@@ -45,6 +54,8 @@ public class V1ClienteFluxoService {
         this.usuarioRepository = usuarioRepository;
         this.localStorageService = localStorageService;
         this.notificacaoRepository = notificacaoRepository;
+        this.comprovanteRepository = comprovanteRepository;
+        this.usuarioProcessoRepository = usuarioProcessoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -128,6 +139,7 @@ public class V1ClienteFluxoService {
     @Transactional(readOnly = true)
     public Map<String, Object> cobrancaDetalhe(Jwt jwt, String idStr) {
         TransacaoEntity t = carregarTransacaoCliente(jwt, idStr);
+        var comp = comprovanteRepository.findByTransacao_Id(t.getId()).orElse(null);
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", "cob_" + t.getId());
         m.put("processo", t.getHonorario().getProcesso().getTituloExibicao());
@@ -135,6 +147,8 @@ public class V1ClienteFluxoService {
         m.put("valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(t.getValor())));
         m.put("vencimento", t.getDataVencimento() != null ? t.getDataVencimento().toString() : null);
         m.put("status", "pendente");
+        m.put("comprovanteEnviado", comp != null);
+        m.put("comprovanteUrl", comp != null ? "/pagamentos/pag_" + t.getId() + "/comprovante" : null);
         m.put("parcela", 1);
         m.put("totalParcelas", 4);
         return m;
@@ -162,13 +176,45 @@ public class V1ClienteFluxoService {
     @Transactional
     public Map<String, Object> comprovanteCliente(Jwt jwt, String idStr, MultipartFile arquivo) throws IOException {
         TransacaoEntity t = carregarTransacaoCliente(jwt, idStr);
+        if (comprovanteRepository.findByTransacao_Id(t.getId()).isPresent()) {
+            throw new BadRequestException("Comprovante já enviado para esta cobrança.");
+        }
+        String path = localStorageService.salvar(arquivo, "comprovantes-cliente");
+        ComprovanteEntity c = new ComprovanteEntity();
+        c.setTransacao(t);
+        c.setNomeArquivo(arquivo.getOriginalFilename());
+        c.setCaminhoArquivo(path);
+        c.setDataUpload(LocalDateTime.now());
+        comprovanteRepository.save(c);
         t.setStatusAprovacao("pendente");
         transacaoRepository.save(t);
-        String path = localStorageService.salvar(arquivo, "comprovantes-cliente");
+        notificarAdvogadosComprovantePendente(t);
         return Map.of(
                 "mensagem", "Comprovante enviado. Aguardando confirmação do escritório.",
                 "comprovanteUrl", "file://" + path
         );
+    }
+
+    private void notificarAdvogadosComprovantePendente(TransacaoEntity t) {
+        if (t.getHonorario() == null || t.getHonorario().getProcesso() == null) {
+            return;
+        }
+        Integer processoId = t.getHonorario().getProcesso().getId();
+        String processoNome = t.getHonorario().getProcesso().getTituloExibicao();
+        String clienteNome = t.getContraparte() != null && !t.getContraparte().isBlank() ? t.getContraparte() : "Cliente";
+        usuarioProcessoRepository.findByIdProcessoIdIn(List.of(processoId)).stream()
+                .map(up -> up.getUsuario())
+                .filter(UsuarioEntity::isAdvogado)
+                .forEach(advogado -> {
+                    NotificacaoEntity n = new NotificacaoEntity();
+                    n.setUsuario(advogado);
+                    n.setTitulo("Pagamento para conferir");
+                    n.setMensagem(clienteNome + " enviou comprovante para " + processoNome + ".");
+                    n.setTipo("pagamento");
+                    n.setLida(false);
+                    n.setDataCriacao(LocalDateTime.now());
+                    notificacaoRepository.save(n);
+                });
     }
 
     private TransacaoEntity carregarTransacaoCliente(Jwt jwt, String idStr) {
@@ -177,7 +223,14 @@ public class V1ClienteFluxoService {
         }
         int tid = idStr.startsWith("cob_") ? Integer.parseInt(idStr.substring(4)) : Integer.parseInt(idStr);
         TransacaoEntity t = transacaoRepository.findById(tid).orElseThrow(() -> new NotFoundException("Cobrança não encontrada"));
-        processoAccessService.garantirAcessoAoProcesso(JwtPrincipalExtractor.userId(jwt), jwt, t.getHonorario().getProcesso().getId());
+        if (t.getHonorario() == null || t.getHonorario().getProcesso() == null) {
+            throw new ForbiddenException("Cobrança sem processo não está disponível no portal do cliente");
+        }
+        processoAccessService.garantirAcessoAoProcesso(
+                JwtPrincipalExtractor.userId(jwt),
+                jwt,
+                t.getHonorario().getProcesso().getId()
+        );
         return t;
     }
 }
