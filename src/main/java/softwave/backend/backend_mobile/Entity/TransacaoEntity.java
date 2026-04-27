@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transacao")
@@ -14,8 +15,12 @@ public class TransacaoEntity {
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "honorario_id", nullable = false)
+    @JoinColumn(name = "honorario_id", nullable = true)
     private HonorarioEntity honorario;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = true)
+    private UsuarioEntity usuario_id;
 
     @Column(length = 150)
     private String titulo;
@@ -53,6 +58,28 @@ public class TransacaoEntity {
     @OneToOne(mappedBy = "transacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private ComprovanteEntity comprovante;
 
+    @Column(name = "arquivo_origem", length = 255)
+    private String arquivoOrigem;
+
+    @Column(name = "data_insercao", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime dataInsercao;
+
+    public String getArquivoOrigem() {
+        return arquivoOrigem;
+    }
+
+    public void setArquivoOrigem(String arquivoOrigem) {
+        this.arquivoOrigem = arquivoOrigem;
+    }
+
+    public LocalDateTime getDataInsercao() {
+        return dataInsercao;
+    }
+
+    public void setDataInsercao(LocalDateTime dataInsercao) {
+        this.dataInsercao = dataInsercao;
+    }
+
     public Integer getId() {
         return id;
     }
@@ -67,6 +94,14 @@ public class TransacaoEntity {
 
     public void setHonorario(HonorarioEntity honorario) {
         this.honorario = honorario;
+    }
+
+    public UsuarioEntity getUsuario_id() {
+        return usuario_id;
+    }
+
+    public void setUsuario_id(UsuarioEntity usuario_id) {
+        this.usuario_id = usuario_id;
     }
 
     public String getTitulo() {
