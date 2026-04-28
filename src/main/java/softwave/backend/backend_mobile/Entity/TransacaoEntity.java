@@ -55,6 +55,9 @@ public class TransacaoEntity {
     @Column(length = 150)
     private String contraparte;
 
+    @Column(length = 100)
+    private String categoria;
+
     @OneToOne(mappedBy = "transacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private ComprovanteEntity comprovante;
 
@@ -190,6 +193,14 @@ public class TransacaoEntity {
 
     public void setContraparte(String contraparte) {
         this.contraparte = contraparte;
+    }
+
+    public String getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
     }
 
     public ComprovanteEntity getComprovante() {

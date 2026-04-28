@@ -1,4 +1,4 @@
-package softwave.backend.backend_mobile.service;
+package softwave.backend.backend_mobile.Service;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -14,9 +14,9 @@ import softwave.backend.backend_mobile.Repository.HonorarioRepository;
 import softwave.backend.backend_mobile.Repository.NotificacaoRepository;
 import softwave.backend.backend_mobile.Repository.TransacaoRepository;
 import softwave.backend.backend_mobile.Repository.UsuarioProcessoRepository;
-import softwave.backend.backend_mobile.Repository.UsuarioRepository;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
 import softwave.backend.backend_mobile.util.MoneyUtil;
+import softwave.backend.backend_mobile.util.TransacaoFinanceiroRules;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -61,6 +61,9 @@ public class V1ContratoService {
         List<Map<String, Object>> contratos = new ArrayList<>();
         for (HonorarioEntity h : lista) {
             Map<String, Object> c = mapContrato(h);
+            if (c == null) {
+                continue;
+            }
             if (status != null && !status.isBlank()) {
                 String req = status.trim().toLowerCase(Locale.ROOT);
                 String cur = String.valueOf(c.get("status")).toLowerCase(Locale.ROOT);
@@ -90,7 +93,11 @@ public class V1ContratoService {
     public Map<String, Object> detalhe(Jwt jwt, String idStr) {
         int id = parseCtr(idStr);
         HonorarioEntity h = honorarioRepository.findById(id).orElseThrow(() -> new NotFoundException("Contrato não encontrado"));
-        processoAccessService.garantirAcessoAoProcesso(JwtPrincipalExtractor.userId(jwt), jwt, h.getProcesso().getId());
+        if (h.getProcesso() != null) {
+            processoAccessService.garantirAcessoAoProcesso(JwtPrincipalExtractor.userId(jwt), jwt, h.getProcesso().getId());
+        } else if (!Objects.equals(h.getAdvogadoUsuarioId(), JwtPrincipalExtractor.userId(jwt))) {
+            throw new ForbiddenException("Sem acesso ao contrato avulso");
+        }
         return mapContratoDetalhe(h);
     }
 
@@ -98,17 +105,24 @@ public class V1ContratoService {
     public Map<String, Object> parcelas(Jwt jwt, String idStr) {
         int id = parseCtr(idStr);
         HonorarioEntity h = honorarioRepository.findById(id).orElseThrow(() -> new NotFoundException("Contrato não encontrado"));
-        processoAccessService.garantirAcessoAoProcesso(JwtPrincipalExtractor.userId(jwt), jwt, h.getProcesso().getId());
+        if (h.getProcesso() != null) {
+            processoAccessService.garantirAcessoAoProcesso(JwtPrincipalExtractor.userId(jwt), jwt, h.getProcesso().getId());
+        } else if (!Objects.equals(h.getAdvogadoUsuarioId(), JwtPrincipalExtractor.userId(jwt))) {
+            throw new ForbiddenException("Sem acesso ao contrato avulso");
+        }
         List<TransacaoEntity> ts = transacaoRepository.findByHonorario_IdOrderByDataEmissaoAsc(id);
         List<Map<String, Object>> parcelas = new ArrayList<>();
         int n = 1;
         for (TransacaoEntity t : ts) {
+            if (TransacaoFinanceiroRules.isCancelada(t)) {
+                continue;
+            }
             Map<String, Object> p = new LinkedHashMap<>();
             p.put("id", "par_" + t.getId());
             p.put("numero", n++);
             p.put("valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(t.getValor())));
             p.put("vencimento", t.getDataVencimento() != null ? t.getDataVencimento().toString() : null);
-            p.put("status", t.getStatusFinanceiro() != null && t.getStatusFinanceiro().toLowerCase().contains("pago") ? "pago" : "pendente");
+            p.put("status", TransacaoFinanceiroRules.estaPago(t) ? "pago" : "pendente");
             parcelas.add(p);
         }
         return Map.of("parcelas", parcelas);
@@ -124,6 +138,11 @@ public class V1ContratoService {
         processoAccessService.garantirAcessoAoProcesso(JwtPrincipalExtractor.userId(jwt), jwt, t.getHonorario().getProcesso().getId());
         String anterior = t.getStatusFinanceiro();
         t.setStatusFinanceiro(novoStatus);
+        if ("pago".equalsIgnoreCase(novoStatus)) {
+            t.setDataPagamento(java.time.LocalDate.now());
+        } else {
+            t.setDataPagamento(null);
+        }
         transacaoRepository.save(t);
         statusHistoricoService.registrar(t, anterior, novoStatus, JwtPrincipalExtractor.userId(jwt), "Atualização de parcela");
         return Map.of("mensagem", "Parcela atualizada com sucesso.");
@@ -159,11 +178,18 @@ public class V1ContratoService {
 
     private Map<String, Object> mapContrato(HonorarioEntity h) {
         ProcessoEntity p = h.getProcesso();
-        List<TransacaoEntity> ts = h.getTransacoes();
-        BigDecimal total = MoneyUtil.toBigDecimalOrZero(h.getValorTotal());
+        List<TransacaoEntity> ts = h.getTransacoes().stream()
+                .filter(t -> !TransacaoFinanceiroRules.isCancelada(t))
+                .toList();
+        if (ts.isEmpty()) {
+            return null;
+        }
+        BigDecimal total = ts.stream()
+                .map(t -> MoneyUtil.toBigDecimalOrZero(t.getValor()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal somaPago = BigDecimal.ZERO;
         for (TransacaoEntity t : ts) {
-            if (t.getDataPagamento() != null || (t.getStatusFinanceiro() != null && t.getStatusFinanceiro().toLowerCase().contains("pago"))) {
+            if (TransacaoFinanceiroRules.estaPago(t)) {
                 somaPago = somaPago.add(MoneyUtil.toBigDecimalOrZero(t.getValor()));
             }
         }
@@ -183,9 +209,9 @@ public class V1ContratoService {
 
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", "ctr_" + h.getId());
-        m.put("clienteId", primeiroClienteId(p.getId()));
-        m.put("cliente", primeiroClienteNome(p.getId()));
-        m.put("processo", p.getTituloExibicao());
+        m.put("clienteId", p != null ? primeiroClienteId(p.getId()) : null);
+        m.put("cliente", p != null ? primeiroClienteNome(p.getId()) : "Sem cliente");
+        m.put("processo", p != null ? p.getTituloExibicao() : "Sem processo");
         m.put("tipoContrato", h.getTitulo() != null ? h.getTitulo() : "Parcelas");
         m.put("status", status);
         m.put("progresso", Math.min(100, progresso));

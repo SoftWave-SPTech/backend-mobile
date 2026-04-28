@@ -5,11 +5,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import softwave.backend.backend_mobile.service.V1TransacaoService;
+import softwave.backend.backend_mobile.Service.V1TransacaoService;
 import softwave.backend.backend_mobile.v1.dto.TransacaoCreateRequest;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -23,17 +22,17 @@ public class TransacaoV1Controller {
     }
 
     @GetMapping
-    public List<Map<String, Object>> listar(
+    public Map<String, Object> listar(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) String tipo,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String busca,
             @RequestParam(required = false) LocalDate dataInicio,
             @RequestParam(required = false) LocalDate dataFim,
+            @RequestParam(required = false) Integer periodoDias,
             @RequestParam(required = false, defaultValue = "1") int page,
             @RequestParam(required = false, defaultValue = "20") int limit
     ) {
-        return transacaoService.listar(jwt, tipo, status, busca, dataInicio, dataFim, page, limit);
+        return transacaoService.listar(jwt, tipo, status, dataInicio, dataFim, periodoDias, page, limit);
     }
 
     @GetMapping("/{id}")

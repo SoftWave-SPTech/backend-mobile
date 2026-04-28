@@ -1,4 +1,4 @@
-package softwave.backend.backend_mobile.service;
+package softwave.backend.backend_mobile.Service;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;

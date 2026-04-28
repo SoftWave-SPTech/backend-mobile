@@ -16,6 +16,8 @@ import softwave.backend.backend_mobile.Repository.ComprovanteRepository;
 import softwave.backend.backend_mobile.Repository.NotificacaoRepository;
 import softwave.backend.backend_mobile.Repository.TransacaoRepository;
 import softwave.backend.backend_mobile.Repository.UsuarioProcessoRepository;
+import softwave.backend.backend_mobile.Service.ProcessoAccessService;
+import softwave.backend.backend_mobile.Service.StatusHistoricoService;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
 import softwave.backend.backend_mobile.util.MoneyUtil;
 

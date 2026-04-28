@@ -5,7 +5,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import softwave.backend.backend_mobile.service.V1ProcessoService;
+import softwave.backend.backend_mobile.Service.V1ProcessoService;
 
 import java.util.List;
 import java.util.Map;

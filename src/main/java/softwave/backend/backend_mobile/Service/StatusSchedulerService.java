@@ -1,10 +1,11 @@
-package softwave.backend.backend_mobile.service;
+package softwave.backend.backend_mobile.Service;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import softwave.backend.backend_mobile.Entity.TransacaoEntity;
 import softwave.backend.backend_mobile.Repository.TransacaoRepository;
+import softwave.backend.backend_mobile.Service.StatusHistoricoService;
 
 import java.time.LocalDate;
 import java.util.List;

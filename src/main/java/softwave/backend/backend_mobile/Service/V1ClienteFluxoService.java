@@ -1,11 +1,10 @@
-package softwave.backend.backend_mobile.service;
+package softwave.backend.backend_mobile.Service;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import softwave.backend.backend_mobile.Entity.ComprovanteEntity;
-import softwave.backend.backend_mobile.Entity.HonorarioEntity;
 import softwave.backend.backend_mobile.Entity.NotificacaoEntity;
 import softwave.backend.backend_mobile.Entity.TransacaoEntity;
 import softwave.backend.backend_mobile.Entity.UsuarioEntity;
@@ -13,17 +12,18 @@ import softwave.backend.backend_mobile.Exception.BadRequestException;
 import softwave.backend.backend_mobile.Exception.ForbiddenException;
 import softwave.backend.backend_mobile.Exception.NotFoundException;
 import softwave.backend.backend_mobile.Repository.ComprovanteRepository;
-import softwave.backend.backend_mobile.Repository.HonorarioRepository;
 import softwave.backend.backend_mobile.Repository.NotificacaoRepository;
 import softwave.backend.backend_mobile.Repository.TransacaoRepository;
 import softwave.backend.backend_mobile.Repository.UsuarioProcessoRepository;
 import softwave.backend.backend_mobile.Repository.UsuarioRepository;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
 import softwave.backend.backend_mobile.util.MoneyUtil;
+import softwave.backend.backend_mobile.util.TransacaoFinanceiroRules;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 import java.util.*;
 
 @Service
@@ -31,7 +31,6 @@ public class V1ClienteFluxoService {
 
     private final ProcessoAccessService processoAccessService;
     private final TransacaoRepository transacaoRepository;
-    private final HonorarioRepository honorarioRepository;
     private final UsuarioRepository usuarioRepository;
     private final LocalStorageService localStorageService;
     private final NotificacaoRepository notificacaoRepository;
@@ -41,7 +40,6 @@ public class V1ClienteFluxoService {
     public V1ClienteFluxoService(
             ProcessoAccessService processoAccessService,
             TransacaoRepository transacaoRepository,
-            HonorarioRepository honorarioRepository,
             UsuarioRepository usuarioRepository,
             LocalStorageService localStorageService,
             NotificacaoRepository notificacaoRepository,
@@ -50,7 +48,6 @@ public class V1ClienteFluxoService {
     ) {
         this.processoAccessService = processoAccessService;
         this.transacaoRepository = transacaoRepository;
-        this.honorarioRepository = honorarioRepository;
         this.usuarioRepository = usuarioRepository;
         this.localStorageService = localStorageService;
         this.notificacaoRepository = notificacaoRepository;
@@ -67,40 +64,56 @@ public class V1ClienteFluxoService {
         UsuarioEntity u = usuarioRepository.findById(uid).orElseThrow();
         List<Integer> pids = processoAccessService.processoIdsDoUsuario(uid);
         List<TransacaoEntity> ts = transacaoRepository.findByHonorario_Processo_IdIn(pids);
+
         BigDecimal pago = BigDecimal.ZERO;
         BigDecimal pendente = BigDecimal.ZERO;
         BigDecimal totalCtr = BigDecimal.ZERO;
-        for (HonorarioEntity h : honorarioRepository.findByProcesso_IdIn(pids)) {
-            totalCtr = totalCtr.add(MoneyUtil.toBigDecimalOrZero(h.getValorTotal()));
-        }
+        TransacaoEntity ultimaCobranca = null;
+
         for (TransacaoEntity t : ts) {
+            if (!TransacaoFinanceiroRules.isReceita(t) || TransacaoFinanceiroRules.isCancelada(t)) {
+                continue;
+            }
             BigDecimal v = MoneyUtil.toBigDecimalOrZero(t.getValor());
-            if (t.getTipo() != null && t.getTipo().toLowerCase().contains("receita")) {
-                if (t.getDataPagamento() != null || (t.getStatusFinanceiro() != null && t.getStatusFinanceiro().toLowerCase().contains("pago"))) {
-                    pago = pago.add(v);
-                } else {
-                    pendente = pendente.add(v);
-                }
+            totalCtr = totalCtr.add(v);
+            if (TransacaoFinanceiroRules.estaPago(t)) {
+                pago = pago.add(v);
+            } else {
+                pendente = pendente.add(v);
+            }
+            if (ultimaCobranca == null || compareRecencia(t, ultimaCobranca) > 0) {
+                ultimaCobranca = t;
             }
         }
-        int pct = totalCtr.signum() > 0 ? pago.multiply(BigDecimal.valueOf(100)).divide(totalCtr, 0, java.math.RoundingMode.HALF_UP).intValue() : 0;
+        int pct = totalCtr.signum() > 0
+                ? pago.multiply(BigDecimal.valueOf(100)).divide(totalCtr, 0, java.math.RoundingMode.HALF_UP).intValue()
+                : 0;
+        long parcelasRestantes = ts.stream()
+                .filter(TransacaoFinanceiroRules::isReceita)
+                .filter(t -> !TransacaoFinanceiroRules.isCancelada(t))
+                .filter(t -> !TransacaoFinanceiroRules.estaPago(t))
+                .count();
         long naoLidas = notificacaoRepository.countByUsuario_IdAndLidaIsFalse(uid);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("nome", u.getNome());
         body.put("totalPago", MoneyUtil.toCentavos(pago));
         body.put("totalPendente", MoneyUtil.toCentavos(pendente));
-        body.put("totalContrato", MoneyUtil.toCentavos(totalCtr.max(BigDecimal.ONE)));
+        body.put("totalContrato", MoneyUtil.toCentavos(totalCtr));
         body.put("percentualPago", pct);
-        body.put("parcelasRestantes", 3);
+        body.put("parcelasRestantes", parcelasRestantes);
         body.put("notificacoesNaoLidas", naoLidas);
-        body.put("ultimaCobranca", Map.of(
-                "id", "cob_0",
-                "descricao", "—",
-                "vencimento", "",
-                "valor", 0,
-                "status", "pendente"
-        ));
+        if (ultimaCobranca != null) {
+            body.put("ultimaCobranca", Map.of(
+                    "id", "cob_" + ultimaCobranca.getId(),
+                    "descricao", ultimaCobranca.getTitulo() != null ? ultimaCobranca.getTitulo() : "Cobrança",
+                    "vencimento", ultimaCobranca.getDataVencimento() != null
+                            ? ultimaCobranca.getDataVencimento().toString()
+                            : (ultimaCobranca.getDataEmissao() != null ? ultimaCobranca.getDataEmissao().toString() : ""),
+                    "valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(ultimaCobranca.getValor())),
+                    "status", TransacaoFinanceiroRules.estaPago(ultimaCobranca) ? "pago" : "pendente"
+            ));
+        }
         return body;
     }
 
@@ -111,28 +124,52 @@ public class V1ClienteFluxoService {
         }
         List<Integer> pids = processoAccessService.processoIdsDoUsuario(JwtPrincipalExtractor.userId(jwt));
         List<Map<String, Object>> list = new ArrayList<>();
-        for (TransacaoEntity t : transacaoRepository.findByHonorario_Processo_IdIn(pids)) {
-            if (t.getTipo() == null || !t.getTipo().toLowerCase().contains("receita")) {
+        List<TransacaoEntity> transacoes = transacaoRepository.findByHonorario_Processo_IdIn(pids);
+        Map<Integer, List<TransacaoEntity>> porHonorario = transacoes.stream()
+                .filter(TransacaoFinanceiroRules::isReceita)
+                .filter(t -> !TransacaoFinanceiroRules.isCancelada(t))
+                .filter(t -> t.getHonorario() != null)
+                .collect(Collectors.groupingBy(t -> t.getHonorario().getId()));
+
+        for (Map.Entry<Integer, List<TransacaoEntity>> entry : porHonorario.entrySet()) {
+            List<TransacaoEntity> receitas = entry.getValue().stream()
+                    .sorted(Comparator
+                            .comparing((TransacaoEntity t) -> t.getDataVencimento() != null ? t.getDataVencimento() : t.getDataEmissao())
+                            .thenComparing(TransacaoEntity::getId))
+                    .toList();
+            if (receitas.isEmpty()) {
                 continue;
             }
-            boolean pago = t.getDataPagamento() != null || (t.getStatusFinanceiro() != null && t.getStatusFinanceiro().toLowerCase().contains("pago"));
-            if ("pago".equalsIgnoreCase(status) && !pago) {
-                continue;
+            int totalParcelas = receitas.size();
+            int pagasNoHonorario = (int) receitas.stream().filter(TransacaoFinanceiroRules::estaPago).count();
+            int percentualPago = Math.min(100, (int) Math.round((pagasNoHonorario * 100.0) / totalParcelas));
+
+            for (int idx = 0; idx < receitas.size(); idx++) {
+                TransacaoEntity t = receitas.get(idx);
+                boolean pago = TransacaoFinanceiroRules.estaPago(t);
+                if ("pago".equalsIgnoreCase(status) && !pago) {
+                    continue;
+                }
+                if ("pendente".equalsIgnoreCase(status) && pago) {
+                    continue;
+                }
+                if (t.getHonorario() == null || t.getHonorario().getProcesso() == null) {
+                    continue;
+                }
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", "cob_" + t.getId());
+                m.put("processo", t.getHonorario().getProcesso().getTituloExibicao());
+                m.put("descricao", t.getTitulo());
+                m.put("valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(t.getValor())));
+                m.put("vencimento", t.getDataVencimento() != null ? t.getDataVencimento().toString() : null);
+                m.put("status", pago ? "pago" : "pendente");
+                m.put("parcela", idx + 1);
+                m.put("totalParcelas", totalParcelas);
+                m.put("percentualPago", percentualPago);
+                list.add(m);
             }
-            if ("pendente".equalsIgnoreCase(status) && pago) {
-                continue;
-            }
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id", "cob_" + t.getId());
-            m.put("processo", t.getHonorario().getProcesso().getTituloExibicao());
-            m.put("valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(t.getValor())));
-            m.put("vencimento", t.getDataVencimento() != null ? t.getDataVencimento().toString() : null);
-            m.put("status", pago ? "pago" : "pendente");
-            m.put("parcela", 1);
-            m.put("totalParcelas", 4);
-            m.put("percentualPago", 50);
-            list.add(m);
         }
+        list.sort(Comparator.comparing(m -> Objects.toString(m.get("vencimento"), "")));
         return Map.of("cobrancas", list);
     }
 
@@ -140,18 +177,49 @@ public class V1ClienteFluxoService {
     public Map<String, Object> cobrancaDetalhe(Jwt jwt, String idStr) {
         TransacaoEntity t = carregarTransacaoCliente(jwt, idStr);
         var comp = comprovanteRepository.findByTransacao_Id(t.getId()).orElse(null);
+        List<TransacaoEntity> receitas = transacaoRepository.findByHonorario_IdOrderByDataEmissaoAsc(t.getHonorario().getId()).stream()
+                .filter(TransacaoFinanceiroRules::isReceita)
+                .filter(tx -> !TransacaoFinanceiroRules.isCancelada(tx))
+                .toList();
+        int parcela = 1;
+        int totalParcelas = receitas.size();
+        for (int i = 0; i < receitas.size(); i++) {
+            if (Objects.equals(receitas.get(i).getId(), t.getId())) {
+                parcela = i + 1;
+                break;
+            }
+        }
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", "cob_" + t.getId());
         m.put("processo", t.getHonorario().getProcesso().getTituloExibicao());
         m.put("descricao", t.getTitulo());
         m.put("valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(t.getValor())));
         m.put("vencimento", t.getDataVencimento() != null ? t.getDataVencimento().toString() : null);
-        m.put("status", "pendente");
+        m.put("status", TransacaoFinanceiroRules.estaPago(t) ? "pago" : "pendente");
         m.put("comprovanteEnviado", comp != null);
         m.put("comprovanteUrl", comp != null ? "/pagamentos/pag_" + t.getId() + "/comprovante" : null);
-        m.put("parcela", 1);
-        m.put("totalParcelas", 4);
+        m.put("parcela", parcela);
+        m.put("totalParcelas", totalParcelas);
         return m;
+    }
+
+    private static int compareRecencia(TransacaoEntity a, TransacaoEntity b) {
+        var da = a.getDataVencimento() != null ? a.getDataVencimento() : a.getDataEmissao();
+        var db = b.getDataVencimento() != null ? b.getDataVencimento() : b.getDataEmissao();
+        if (da == null && db == null) {
+            return Integer.compare(a.getId(), b.getId());
+        }
+        if (da == null) {
+            return -1;
+        }
+        if (db == null) {
+            return 1;
+        }
+        int cmp = da.compareTo(db);
+        if (cmp != 0) {
+            return cmp;
+        }
+        return Integer.compare(a.getId(), b.getId());
     }
 
     public Map<String, Object> pixStub(Jwt jwt, String idStr) {

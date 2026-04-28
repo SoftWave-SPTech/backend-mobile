@@ -1,7 +1,8 @@
-package softwave.backend.backend_mobile.service;
+package softwave.backend.backend_mobile.Service;
 
 import java.math.BigDecimal;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +12,7 @@ import softwave.backend.backend_mobile.Repository.TransacaoRepository;
 import softwave.backend.backend_mobile.Repository.TransacaoSpecifications;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
 import softwave.backend.backend_mobile.util.MoneyUtil;
+import softwave.backend.backend_mobile.util.TransacaoFinanceiroRules;
 
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -37,11 +39,12 @@ public class V1RelatorioService {
     @Transactional(readOnly = true)
     public Map<String, Object> receitaDespesa(Jwt jwt, String periodo) {
         LocalDate[] r = range(periodo);
+        int uid = JwtPrincipalExtractor.userId(jwt);
         List<Integer> pids = pids(jwt);
-        List<TransacaoEntity> tx = transacaoRepository.findAll(
-                TransacaoSpecifications.processoEm(pids)
-                        .and(TransacaoSpecifications.dataEmissaoEntre(r[0], r[1]))
-        );
+        Specification<TransacaoEntity> acesso = pids.isEmpty()
+                ? TransacaoSpecifications.avulsoDoAdvogado(uid)
+                : TransacaoSpecifications.processoEmOuAvulso(pids, uid);
+        List<TransacaoEntity> tx = transacaoRepository.findAll(acesso.and(TransacaoSpecifications.dataEmissaoEntre(r[0], r[1])));
         List<String> labels = List.of("P1", "P2", "P3");
         List<Long> receita = new ArrayList<>();
         List<Long> despesa = new ArrayList<>();
@@ -51,11 +54,14 @@ public class V1RelatorioService {
         }
         long rec = 0, des = 0;
         for (TransacaoEntity t : tx) {
+            if (TransacaoFinanceiroRules.isCancelada(t) || !TransacaoFinanceiroRules.estaPago(t)) {
+                continue;
+            }
             BigDecimal v = MoneyUtil.toBigDecimalOrZero(t.getValor());
             long c = MoneyUtil.toCentavos(v);
-            if (t.getTipo() != null && t.getTipo().toLowerCase().contains("receita")) {
+            if (TransacaoFinanceiroRules.isReceita(t)) {
                 rec += c;
-            } else if (t.getTipo() != null && t.getTipo().toLowerCase().contains("despesa")) {
+            } else if (TransacaoFinanceiroRules.isDespesa(t)) {
                 des += c;
             }
         }
@@ -67,19 +73,20 @@ public class V1RelatorioService {
     @Transactional(readOnly = true)
     public Map<String, Object> receitaCategoria(Jwt jwt, String periodo) {
         LocalDate[] r = range(periodo);
+        int uid = JwtPrincipalExtractor.userId(jwt);
         List<Integer> pids = pids(jwt);
-        List<TransacaoEntity> tx = transacaoRepository.findAll(
-                TransacaoSpecifications.processoEm(pids)
-                        .and(TransacaoSpecifications.dataEmissaoEntre(r[0], r[1]))
-        );
+        Specification<TransacaoEntity> acesso = pids.isEmpty()
+                ? TransacaoSpecifications.avulsoDoAdvogado(uid)
+                : TransacaoSpecifications.processoEmOuAvulso(pids, uid);
+        List<TransacaoEntity> tx = transacaoRepository.findAll(acesso.and(TransacaoSpecifications.dataEmissaoEntre(r[0], r[1])));
         Map<String, Long> acc = new HashMap<>();
         long total = 0;
         for (TransacaoEntity t : tx) {
-            if (t.getTipo() == null || !t.getTipo().toLowerCase().contains("receita")) {
+            if (TransacaoFinanceiroRules.isCancelada(t) || !TransacaoFinanceiroRules.estaPago(t) || !TransacaoFinanceiroRules.isReceita(t)) {
                 continue;
             }
             long c = MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(t.getValor()));
-            String nome = t.getTitulo() != null ? t.getTitulo() : "Outros";
+            String nome = TransacaoFinanceiroRules.categoriaOrDefault(t);
             acc.merge(nome, c, Long::sum);
             total += c;
         }
@@ -99,18 +106,22 @@ public class V1RelatorioService {
     @Transactional(readOnly = true)
     public Map<String, Object> kpis(Jwt jwt, String periodo) {
         LocalDate[] r = range(periodo);
+        int uid = JwtPrincipalExtractor.userId(jwt);
         List<Integer> pids = pids(jwt);
-        List<TransacaoEntity> tx = transacaoRepository.findAll(
-                TransacaoSpecifications.processoEm(pids)
-                        .and(TransacaoSpecifications.dataEmissaoEntre(r[0], r[1]))
-        );
+        Specification<TransacaoEntity> acesso = pids.isEmpty()
+                ? TransacaoSpecifications.avulsoDoAdvogado(uid)
+                : TransacaoSpecifications.processoEmOuAvulso(pids, uid);
+        List<TransacaoEntity> tx = transacaoRepository.findAll(acesso.and(TransacaoSpecifications.dataEmissaoEntre(r[0], r[1])));
         BigDecimal rec = BigDecimal.ZERO;
         BigDecimal des = BigDecimal.ZERO;
         for (TransacaoEntity t : tx) {
+            if (TransacaoFinanceiroRules.isCancelada(t) || !TransacaoFinanceiroRules.estaPago(t)) {
+                continue;
+            }
             BigDecimal v = MoneyUtil.toBigDecimalOrZero(t.getValor());
-            if (t.getTipo() != null && t.getTipo().toLowerCase().contains("receita")) {
+            if (TransacaoFinanceiroRules.isReceita(t)) {
                 rec = rec.add(v);
-            } else if (t.getTipo() != null && t.getTipo().toLowerCase().contains("despesa")) {
+            } else if (TransacaoFinanceiroRules.isDespesa(t)) {
                 des = des.add(v);
             }
         }

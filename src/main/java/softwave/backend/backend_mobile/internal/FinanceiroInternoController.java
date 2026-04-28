@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import softwave.backend.backend_mobile.internal.dto.CobrancaResumoInternoDto;
 import softwave.backend.backend_mobile.internal.dto.RankingReceitaResponseDto;
 import softwave.backend.backend_mobile.internal.dto.TransacaoResumoInternoDto;
-import softwave.backend.backend_mobile.service.FinanceiroInternoService;
+import softwave.backend.backend_mobile.Service.FinanceiroInternoService;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;

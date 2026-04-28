@@ -4,7 +4,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import softwave.backend.backend_mobile.service.V1PerfilService;
+import softwave.backend.backend_mobile.Service.V1PerfilService;
 
 import java.util.Map;
 

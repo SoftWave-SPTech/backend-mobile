@@ -3,7 +3,7 @@ package softwave.backend.backend_mobile.v1;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-import softwave.backend.backend_mobile.service.V1ContratoService;
+import softwave.backend.backend_mobile.Service.V1ContratoService;
 
 import java.util.Map;
 

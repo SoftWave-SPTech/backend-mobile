@@ -1,4 +1,4 @@
-package softwave.backend.backend_mobile.service;
+package softwave.backend.backend_mobile.Service;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -201,6 +201,10 @@ public class FinanceiroInternoService {
     }
 
     private static String categoriaChave(TransacaoEntity t) {
+        String categoria = t.getCategoria();
+        if (categoria != null && !categoria.isBlank()) {
+            return categoria.trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+        }
         String tipo = t.getTipo();
         if (tipo == null || tipo.isBlank()) {
             return "OUTROS";

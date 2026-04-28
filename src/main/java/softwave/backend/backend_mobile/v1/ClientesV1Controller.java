@@ -8,7 +8,7 @@ import softwave.backend.backend_mobile.Entity.UsuarioEntity;
 import softwave.backend.backend_mobile.Exception.ForbiddenException;
 import softwave.backend.backend_mobile.Repository.UsuarioRepository;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
-import softwave.backend.backend_mobile.service.V1ClienteCadastroService;
+import softwave.backend.backend_mobile.Service.V1ClienteCadastroService;
 import softwave.backend.backend_mobile.v1.dto.ClienteCreateRequest;
 
 import java.util.LinkedHashMap;
