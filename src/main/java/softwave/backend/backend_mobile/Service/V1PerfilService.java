@@ -1,14 +1,22 @@
 package softwave.backend.backend_mobile.Service;
 
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import softwave.backend.backend_mobile.Entity.UsuarioEntity;
+import softwave.backend.backend_mobile.Exception.NotFoundException;
 import softwave.backend.backend_mobile.Repository.UsuarioRepository;
 import softwave.backend.backend_mobile.security.JwtPrincipalExtractor;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -80,7 +88,7 @@ public class V1PerfilService {
         m.put("endereco", montarEndereco(u));
         m.put("cpf", u.getCpf());
         m.put("clienteDesde", u.getCreatedAt() != null ? u.getCreatedAt().toLocalDate().toString() : null);
-        m.put("fotoPerfil", u.getFoto());
+        m.put("fotoPerfil", (u.getFoto() == null || u.getFoto().isBlank()) ? null : "/v1/cliente/perfil/foto");
         m.put("processoAtivo", Map.of());
         m.put("preferencias", Map.of("notificacoesAtivas", true));
         return m;
@@ -94,6 +102,27 @@ public class V1PerfilService {
     @Transactional
     public Map<String, Object> fotoCliente(Jwt jwt, MultipartFile foto) throws IOException {
         return fotoAdvogado(jwt, foto);
+    }
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> fotoClienteArquivo(Jwt jwt) throws IOException {
+        UsuarioEntity u = usuarioRepository.findById(JwtPrincipalExtractor.userId(jwt)).orElseThrow();
+        String foto = u.getFoto();
+        if (foto == null || foto.isBlank()) {
+            throw new NotFoundException("Foto de perfil não cadastrada");
+        }
+        String localPath = foto.startsWith("file://") ? foto.substring("file://".length()) : foto;
+        Path path = Paths.get(localPath);
+        if (!Files.exists(path)) {
+            throw new NotFoundException("Arquivo de foto não encontrado no disco");
+        }
+        String contentType = Files.probeContentType(path);
+        MediaType mt = (contentType == null || contentType.isBlank())
+                ? MediaType.APPLICATION_OCTET_STREAM
+                : MediaType.parseMediaType(contentType);
+        return ResponseEntity.ok()
+                .contentType(mt)
+                .body(new PathResource(path));
     }
 
     private static String montarEndereco(UsuarioEntity u) {

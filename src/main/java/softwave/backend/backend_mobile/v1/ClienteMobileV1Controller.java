@@ -1,5 +1,7 @@
 package softwave.backend.backend_mobile.v1;
 
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -65,5 +67,10 @@ public class ClienteMobileV1Controller {
     @PostMapping("/perfil/foto")
     public Map<String, Object> foto(@AuthenticationPrincipal Jwt jwt, @RequestPart("foto") MultipartFile foto) throws Exception {
         return perfilService.fotoCliente(jwt, foto);
+    }
+
+    @GetMapping("/perfil/foto")
+    public ResponseEntity<Resource> fotoPerfilArquivo(@AuthenticationPrincipal Jwt jwt) throws Exception {
+        return perfilService.fotoClienteArquivo(jwt);
     }
 }

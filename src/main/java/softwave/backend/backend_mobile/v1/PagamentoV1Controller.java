@@ -5,7 +5,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import softwave.backend.backend_mobile.service.V1PagamentoService;
+import softwave.backend.backend_mobile.Service.V1PagamentoService;
 
 import java.util.Map;
 
