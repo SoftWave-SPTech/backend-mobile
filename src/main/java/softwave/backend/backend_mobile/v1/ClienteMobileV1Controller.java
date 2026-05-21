@@ -59,6 +59,11 @@ public class ClienteMobileV1Controller {
         return perfilService.perfilCliente(jwt);
     }
 
+    @PutMapping("/perfil")
+    public Map<String, Object> atualizarPerfil(@AuthenticationPrincipal Jwt jwt, @RequestBody Map<String, Object> body) {
+        return perfilService.atualizarCliente(jwt, body);
+    }
+
     @PutMapping("/preferencias")
     public Map<String, Object> preferencias(@AuthenticationPrincipal Jwt jwt, @RequestBody Map<String, Object> body) {
         return perfilService.preferenciasCliente(jwt, body);
