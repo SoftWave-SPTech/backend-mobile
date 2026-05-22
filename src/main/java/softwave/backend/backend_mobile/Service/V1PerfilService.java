@@ -5,6 +5,8 @@ import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +25,8 @@ import java.util.Map;
 @Service
 public class V1PerfilService {
 
+    private static final Logger log = LoggerFactory.getLogger(V1PerfilService.class);
+
     private final UsuarioRepository usuarioRepository;
     private final LocalStorageService localStorageService;
 
@@ -31,9 +35,19 @@ public class V1PerfilService {
         this.localStorageService = localStorageService;
     }
 
+    private UsuarioEntity carregarUsuario(Jwt jwt) {
+        int userId = JwtPrincipalExtractor.userId(jwt);
+        return usuarioRepository.findById(userId)
+                .orElseThrow(() -> {
+                    String msg = "Usuário não encontrado no backend para id=" + userId;
+                    log.warn(msg);
+                    return new NotFoundException(msg);
+                });
+    }
+
     @Transactional(readOnly = true)
     public Map<String, Object> perfilAdvogado(Jwt jwt) {
-        UsuarioEntity u = usuarioRepository.findById(JwtPrincipalExtractor.userId(jwt)).orElseThrow();
+        UsuarioEntity u = carregarUsuario(jwt);
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", "usr_" + u.getId());
         m.put("nome", u.getNomeFantasia() != null ? u.getNomeFantasia() : u.getNome());
@@ -54,7 +68,7 @@ public class V1PerfilService {
 
     @Transactional
     public Map<String, Object> atualizarAdvogado(Jwt jwt, Map<String, Object> body) {
-        UsuarioEntity u = usuarioRepository.findById(JwtPrincipalExtractor.userId(jwt)).orElseThrow();
+        UsuarioEntity u = carregarUsuario(jwt);
         if (body.containsKey("nome")) {
             u.setNome(body.get("nome").toString());
         }
@@ -70,7 +84,7 @@ public class V1PerfilService {
 
     @Transactional
     public Map<String, Object> fotoAdvogado(Jwt jwt, MultipartFile foto) throws IOException {
-        UsuarioEntity u = usuarioRepository.findById(JwtPrincipalExtractor.userId(jwt)).orElseThrow();
+        UsuarioEntity u = carregarUsuario(jwt);
         String path = localStorageService.salvar(foto, "perfil");
         u.setFoto("file://" + path);
         usuarioRepository.save(u);
@@ -79,7 +93,7 @@ public class V1PerfilService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> perfilCliente(Jwt jwt) {
-        UsuarioEntity u = usuarioRepository.findById(JwtPrincipalExtractor.userId(jwt)).orElseThrow();
+        UsuarioEntity u = carregarUsuario(jwt);
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", "cli_" + u.getId());
         m.put("nome", u.getNome());
@@ -106,7 +120,7 @@ public class V1PerfilService {
 
     @Transactional(readOnly = true)
     public ResponseEntity<Resource> fotoClienteArquivo(Jwt jwt) throws IOException {
-        UsuarioEntity u = usuarioRepository.findById(JwtPrincipalExtractor.userId(jwt)).orElseThrow();
+        UsuarioEntity u = carregarUsuario(jwt);
         String foto = u.getFoto();
         if (foto == null || foto.isBlank()) {
             throw new NotFoundException("Foto de perfil não cadastrada");
