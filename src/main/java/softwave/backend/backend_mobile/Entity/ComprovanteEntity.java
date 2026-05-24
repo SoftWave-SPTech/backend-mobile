@@ -1,45 +1,29 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "comprovante")
 public class ComprovanteEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transacao_id", nullable = false, unique = true)
+    private TransacaoEntity transacao;
+
+    @Column(name = "nome_arquivo")
     private String nomeArquivo;
+
+    @Column(name = "caminho_arquivo")
     private String caminhoArquivo;
-    private LocalDate dataUpload;
 
-    public ComprovanteEntity() {
-    }
-
-    public ComprovanteEntity(
-            Integer id,
-            String nomeArquivo,
-            String caminhoArquivo,
-            LocalDate dataUpload
-    ) {
-        this.id = id;
-        this.nomeArquivo = nomeArquivo;
-        this.caminhoArquivo = caminhoArquivo;
-        this.dataUpload = dataUpload;
-    }
-
-    public ComprovanteEntity(
-            String nomeArquivo,
-            String caminhoArquivo,
-            LocalDate dataUpload
-    ) {
-        this.nomeArquivo = nomeArquivo;
-        this.caminhoArquivo = caminhoArquivo;
-        this.dataUpload = dataUpload;
-    }
+    @Column(name = "data_upload")
+    private LocalDateTime dataUpload;
 
     public Integer getId() {
         return id;
@@ -47,6 +31,14 @@ public class ComprovanteEntity {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public TransacaoEntity getTransacao() {
+        return transacao;
+    }
+
+    public void setTransacao(TransacaoEntity transacao) {
+        this.transacao = transacao;
     }
 
     public String getNomeArquivo() {
@@ -65,11 +57,11 @@ public class ComprovanteEntity {
         this.caminhoArquivo = caminhoArquivo;
     }
 
-    public LocalDate getDataUpload() {
+    public LocalDateTime getDataUpload() {
         return dataUpload;
     }
 
-    public void setDataUpload(LocalDate dataUpload) {
+    public void setDataUpload(LocalDateTime dataUpload) {
         this.dataUpload = dataUpload;
     }
 }

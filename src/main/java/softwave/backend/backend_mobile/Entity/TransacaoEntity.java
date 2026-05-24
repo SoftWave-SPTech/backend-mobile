@@ -1,84 +1,86 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "transacao")
 public class TransacaoEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "honorario_id", nullable = true)
+    private HonorarioEntity honorario;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = true)
+    private UsuarioEntity usuario_id;
+
+    @Column(length = 150)
     private String titulo;
-    private Double valor;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal valor;
+
+    @Column(length = 50)
     private String tipo;
+
+    @Column(name = "status_financeiro", length = 50)
     private String statusFinanceiro;
+
+    @Column(name = "status_aprovacao", length = 50)
     private String statusAprovacao;
+
+    @Column(name = "data_emissao")
     private LocalDate dataEmissao;
+
+    @Column(name = "data_vencimento")
     private LocalDate dataVencimento;
+
+    @Column(name = "data_pagamento")
     private LocalDate dataPagamento;
+
+    @Column(columnDefinition = "TEXT")
     private String descricao;
+
+    @Column(columnDefinition = "TEXT")
     private String observacoes;
+
+    @Column(length = 150)
     private String contraparte;
 
-    public TransacaoEntity() {
+    @Column(length = 100)
+    private String categoria;
+
+    @OneToOne(mappedBy = "transacao", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ComprovanteEntity comprovante;
+
+    @Column(name = "arquivo_origem", length = 255)
+    private String arquivoOrigem;
+
+    @Column(name = "data_insercao", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime dataInsercao;
+
+    public String getArquivoOrigem() {
+        return arquivoOrigem;
     }
 
-    public TransacaoEntity(
-            Integer id,
-            String titulo,
-            Double valor,
-            String tipo,
-            String statusFinanceiro,
-            String statusAprovacao,
-            LocalDate dataEmissao,
-            LocalDate dataVencimento,
-            LocalDate dataPagamento,
-            String observacoes,
-            String descricao,
-            String contraparte
-    ) {
-        this.id = id;
-        this.titulo = titulo;
-        this.valor = valor;
-        this.tipo = tipo;
-        this.statusFinanceiro = statusFinanceiro;
-        this.statusAprovacao = statusAprovacao;
-        this.dataEmissao = dataEmissao;
-        this.dataVencimento = dataVencimento;
-        this.dataPagamento = dataPagamento;
-        this.observacoes = observacoes;
-        this.descricao = descricao;
-        this.contraparte = contraparte;
+    public void setArquivoOrigem(String arquivoOrigem) {
+        this.arquivoOrigem = arquivoOrigem;
     }
 
-    public TransacaoEntity(
-            String titulo,
-            Double valor,
-            String tipo,
-            String statusFinanceiro,
-            String statusAprovacao,
-            LocalDate dataEmissao,
-            LocalDate dataVencimento,
-            LocalDate dataPagamento,
-            String descricao,
-            String observacoes,
-            String contraparte
-    ) {
-        this.titulo = titulo;
-        this.valor = valor;
-        this.tipo = tipo;
-        this.statusFinanceiro = statusFinanceiro;
-        this.statusAprovacao = statusAprovacao;
-        this.dataEmissao = dataEmissao;
-        this.dataVencimento = dataVencimento;
-        this.dataPagamento = dataPagamento;
-        this.descricao = descricao;
-        this.observacoes = observacoes;
-        this.contraparte = contraparte;
+    public LocalDateTime getDataInsercao() {
+        return dataInsercao;
+    }
+
+    public void setDataInsercao(LocalDateTime dataInsercao) {
+        this.dataInsercao = dataInsercao;
     }
 
     public Integer getId() {
@@ -89,6 +91,22 @@ public class TransacaoEntity {
         this.id = id;
     }
 
+    public HonorarioEntity getHonorario() {
+        return honorario;
+    }
+
+    public void setHonorario(HonorarioEntity honorario) {
+        this.honorario = honorario;
+    }
+
+    public UsuarioEntity getUsuario_id() {
+        return usuario_id;
+    }
+
+    public void setUsuario_id(UsuarioEntity usuario_id) {
+        this.usuario_id = usuario_id;
+    }
+
     public String getTitulo() {
         return titulo;
     }
@@ -97,20 +115,20 @@ public class TransacaoEntity {
         this.titulo = titulo;
     }
 
-    public Double getValor() {
+    public BigDecimal getValor() {
         return valor;
     }
 
-    public void setValor(Double valor) {
+    public void setValor(BigDecimal valor) {
         this.valor = valor;
     }
 
-    public String getStatusAprovacao() {
-        return statusAprovacao;
+    public String getTipo() {
+        return tipo;
     }
 
-    public void setStatusAprovacao(String statusAprovacao) {
-        this.statusAprovacao = statusAprovacao;
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 
     public String getStatusFinanceiro() {
@@ -121,12 +139,20 @@ public class TransacaoEntity {
         this.statusFinanceiro = statusFinanceiro;
     }
 
-    public String getTipo() {
-        return tipo;
+    public String getStatusAprovacao() {
+        return statusAprovacao;
     }
 
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
+    public void setStatusAprovacao(String statusAprovacao) {
+        this.statusAprovacao = statusAprovacao;
+    }
+
+    public LocalDate getDataEmissao() {
+        return dataEmissao;
+    }
+
+    public void setDataEmissao(LocalDate dataEmissao) {
+        this.dataEmissao = dataEmissao;
     }
 
     public LocalDate getDataVencimento() {
@@ -145,6 +171,14 @@ public class TransacaoEntity {
         this.dataPagamento = dataPagamento;
     }
 
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+
     public String getObservacoes() {
         return observacoes;
     }
@@ -161,19 +195,19 @@ public class TransacaoEntity {
         this.contraparte = contraparte;
     }
 
-    public String getDescricao() {
-        return descricao;
+    public String getCategoria() {
+        return categoria;
     }
 
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
     }
 
-    public LocalDate getDataEmissao() {
-        return dataEmissao;
+    public ComprovanteEntity getComprovante() {
+        return comprovante;
     }
 
-    public void setDataEmissao(LocalDate dataEmissao) {
-        this.dataEmissao = dataEmissao;
+    public void setComprovante(ComprovanteEntity comprovante) {
+        this.comprovante = comprovante;
     }
 }

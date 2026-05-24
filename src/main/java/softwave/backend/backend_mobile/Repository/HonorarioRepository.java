@@ -4,6 +4,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import softwave.backend.backend_mobile.Entity.HonorarioEntity;
 
+import java.util.Collection;
+import java.util.List;
+
 @Repository
 public interface HonorarioRepository extends JpaRepository<HonorarioEntity, Integer> {
+
+    List<HonorarioEntity> findByProcesso_IdIn(Collection<Integer> processoIds);
 }

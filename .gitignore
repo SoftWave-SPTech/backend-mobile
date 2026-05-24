@@ -31,3 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Uploads locais (MVP)
+local-storage/*
+!local-storage/.gitkeep
+!local-storage/imagens/
+!local-storage/imagens/.gitkeep
+!local-storage/documentos/
+!local-storage/documentos/.gitkeep
+!local-storage/comprovantes/
+!local-storage/comprovantes/.gitkeep
+!local-storage/perfis/
+!local-storage/perfis/.gitkeep

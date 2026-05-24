@@ -1,55 +1,35 @@
 package softwave.backend.backend_mobile.Entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "notificacao")
 public class NotificacaoEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private UsuarioEntity usuario;
+
+    @Column(length = 150)
     private String titulo;
+
+    @Column(columnDefinition = "TEXT")
     private String mensagem;
-    private String  tipo;
+
+    @Column(length = 50)
+    private String tipo;
+
+    @Column
     private Boolean lida;
-    private LocalDate dataCriacao;
 
-    public NotificacaoEntity() {
-    }
-
-    public NotificacaoEntity(
-            Integer id,
-            String mensagem,
-            String titulo,
-            Boolean lida,
-            String tipo,
-            LocalDate dataCriacao
-    ) {
-        this.id = id;
-        this.mensagem = mensagem;
-        this.titulo = titulo;
-        this.lida = lida;
-        this.tipo = tipo;
-        this.dataCriacao = dataCriacao;
-    }
-
-    public NotificacaoEntity(
-            String titulo,
-            String tipo,
-            String mensagem,
-            Boolean lida,
-            LocalDate dataCriacao
-    ) {
-        this.titulo = titulo;
-        this.tipo = tipo;
-        this.mensagem = mensagem;
-        this.lida = lida;
-        this.dataCriacao = dataCriacao;
-    }
+    @Column(name = "data_criacao")
+    private LocalDateTime dataCriacao;
 
     public Integer getId() {
         return id;
@@ -59,28 +39,20 @@ public class NotificacaoEntity {
         this.id = id;
     }
 
-    public LocalDate getDataCriacao() {
-        return dataCriacao;
+    public UsuarioEntity getUsuario() {
+        return usuario;
     }
 
-    public void setDataCriacao(LocalDate dataCriacao) {
-        this.dataCriacao = dataCriacao;
+    public void setUsuario(UsuarioEntity usuario) {
+        this.usuario = usuario;
     }
 
-    public Boolean getLida() {
-        return lida;
+    public String getTitulo() {
+        return titulo;
     }
 
-    public void setLida(Boolean lida) {
-        this.lida = lida;
-    }
-
-    public String getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
     }
 
     public String getMensagem() {
@@ -91,11 +63,27 @@ public class NotificacaoEntity {
         this.mensagem = mensagem;
     }
 
-    public String getTitulo() {
-        return titulo;
+    public String getTipo() {
+        return tipo;
     }
 
-    public void setTitulo(String titulo) {
-        this.titulo = titulo;
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+
+    public Boolean getLida() {
+        return lida;
+    }
+
+    public void setLida(Boolean lida) {
+        this.lida = lida;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
     }
 }
