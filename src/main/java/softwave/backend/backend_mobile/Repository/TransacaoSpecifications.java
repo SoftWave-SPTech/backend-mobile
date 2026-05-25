@@ -10,6 +10,7 @@ import softwave.backend.backend_mobile.Entity.TransacaoEntity;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Locale;
 
 public final class TransacaoSpecifications {
 
@@ -53,11 +54,47 @@ public final class TransacaoSpecifications {
         if (status == null || status.isBlank()) {
             return (root, q, cb) -> cb.conjunction();
         }
-        String s = status.trim().toLowerCase().replace("-", "");
+        String s = status.trim().toLowerCase(Locale.ROOT).replace("-", "");
+        if ("atrasado".equals(s)) {
+            return atrasadoOuVencida();
+        }
+        if ("pendente".equals(s) || "emdia".equals(s)) {
+            return pendenteNaoVencida();
+        }
         return (root, q, cb) -> cb.or(
                 cb.like(cb.lower(cb.coalesce(root.get("statusFinanceiro"), "")), "%" + s + "%"),
                 cb.like(cb.lower(cb.coalesce(root.get("statusAprovacao"), "")), "%" + s + "%")
         );
+    }
+
+    private static Specification<TransacaoEntity> atrasadoOuVencida() {
+        LocalDate hoje = LocalDate.now();
+        return (root, q, cb) -> {
+            Predicate naoPago = cb.isNull(root.get("dataPagamento"));
+            Predicate naoCancel = cb.not(cb.like(cb.lower(cb.coalesce(root.get("statusFinanceiro"), "")), "%cancel%"));
+            Predicate naoPagoStatus = cb.not(cb.like(cb.lower(cb.coalesce(root.get("statusFinanceiro"), "")), "%pago%"));
+            Predicate vencida = cb.and(
+                    root.get("dataVencimento").isNotNull(),
+                    cb.lessThan(root.get("dataVencimento"), hoje)
+            );
+            Predicate statusAtrasado = cb.like(cb.lower(cb.coalesce(root.get("statusFinanceiro"), "")), "%atras%");
+            return cb.and(naoPago, naoCancel, naoPagoStatus, cb.or(statusAtrasado, vencida));
+        };
+    }
+
+    private static Specification<TransacaoEntity> pendenteNaoVencida() {
+        LocalDate hoje = LocalDate.now();
+        return (root, q, cb) -> {
+            Predicate naoPago = cb.isNull(root.get("dataPagamento"));
+            Predicate naoCancel = cb.not(cb.like(cb.lower(cb.coalesce(root.get("statusFinanceiro"), "")), "%cancel%"));
+            Predicate naoPagoStatus = cb.not(cb.like(cb.lower(cb.coalesce(root.get("statusFinanceiro"), "")), "%pago%"));
+            Predicate naoAtrasado = cb.not(cb.like(cb.lower(cb.coalesce(root.get("statusFinanceiro"), "")), "%atras%"));
+            Predicate naoVencida = cb.or(
+                    root.get("dataVencimento").isNull(),
+                    cb.greaterThanOrEqualTo(root.get("dataVencimento"), hoje)
+            );
+            return cb.and(naoPago, naoCancel, naoPagoStatus, naoAtrasado, naoVencida);
+        };
     }
 
     public static Specification<TransacaoEntity> buscaTituloOuCliente(String busca) {

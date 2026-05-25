@@ -2,6 +2,7 @@ package softwave.backend.backend_mobile.util;
 
 import softwave.backend.backend_mobile.Entity.TransacaoEntity;
 
+import java.time.LocalDate;
 import java.util.Locale;
 
 public final class TransacaoFinanceiroRules {
@@ -50,5 +51,19 @@ public final class TransacaoFinanceiroRules {
             return categoria.trim();
         }
         return "outros";
+    }
+
+    /** Status exposto na API — derivado do vencimento antes do cron persistir no banco. */
+    public static String mapStatusApi(TransacaoEntity t) {
+        if (isCancelada(t)) {
+            return "cancelado";
+        }
+        if (estaPago(t)) {
+            return "pago";
+        }
+        if (t.getDataVencimento() != null && t.getDataVencimento().isBefore(LocalDate.now())) {
+            return "atrasado";
+        }
+        return "pendente";
     }
 }
