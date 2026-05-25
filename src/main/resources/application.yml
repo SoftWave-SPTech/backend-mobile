@@ -3,9 +3,9 @@ spring:
     name: SoftWave-Finance
 
   datasource:
-    url: jdbc:mysql://localhost:3306/softwaveteste?createDatabaseIfNotExist=true&useTimezone=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/softwave?createDatabaseIfNotExist=true&useTimezone=true&serverTimezone=UTC
     username: root
-    password: ${MYSQL_PASSWORD:09241724}
+    password: ${MYSQL_PASSWORD:cris2003}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
