@@ -196,15 +196,21 @@ public class V1ContratoService {
         int progresso = total.signum() > 0
                 ? somaPago.multiply(BigDecimal.valueOf(100)).divide(total, 0, RoundingMode.HALF_UP).intValue()
                 : 0;
-        boolean encerrado = h.getDataFim() != null && h.getDataFim().isBefore(java.time.LocalDate.now());
-        String status = h.getStatus() != null ? h.getStatus().toLowerCase(Locale.ROOT) : (encerrado ? "encerrado" : "pendente");
-        if (status.equals("em-dia")) {
-            status = "pendente";
-        }
-        if (encerrado && !status.equals("cancelado")) {
+        boolean todasPagas = progresso >= 100;
+        boolean encerrado = todasPagas;
+        String statusDb = h.getStatus() != null ? h.getStatus().toLowerCase(Locale.ROOT) : "";
+        String status;
+        if ("cancelado".equals(statusDb)) {
+            status = "cancelado";
+        } else if (encerrado) {
             status = "encerrado";
-        } else if (progresso >= 100 && !status.equals("cancelado")) {
-            status = "pago";
+        } else {
+            java.time.LocalDate hoje = java.time.LocalDate.now();
+            boolean temAtrasada = ts.stream().anyMatch(t ->
+                    !TransacaoFinanceiroRules.estaPago(t)
+                            && t.getDataVencimento() != null
+                            && t.getDataVencimento().isBefore(hoje));
+            status = temAtrasada ? "atrasado" : "pendente";
         }
 
         Map<String, Object> m = new LinkedHashMap<>();
