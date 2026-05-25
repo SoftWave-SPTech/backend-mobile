@@ -102,7 +102,10 @@ public class SecurityConfig {
     SecurityFilterChain defaultChain(HttpSecurity http) throws Exception {
         http.cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(a -> a.anyRequest().denyAll());
+                .authorizeHttpRequests(a -> a
+                        .requestMatchers("/arquivos/**").permitAll()
+                        .anyRequest().denyAll());
+
         return http.build();
     }
 

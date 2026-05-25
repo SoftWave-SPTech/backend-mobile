@@ -15,29 +15,59 @@ import java.util.UUID;
 @Service
 public class LocalStorageService {
 
-    @Value("${app.storage.upload-dir:./uploads}")
+    @Value("${app.storage.upload-dir:./local-storage}")
     private String uploadDir;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @PostConstruct
     public void prepararEstruturaLocal() throws IOException {
-        Path base = Paths.get(uploadDir);
+
+        Path base = Paths.get(uploadDir).toAbsolutePath();
+
         Files.createDirectories(base);
-        for (String pasta : List.of("imagens", "documentos", "comprovantes", "perfis")) {
+
+        for (String pasta : List.of(
+                "imagens",
+                "documentos",
+                "comprovantes",
+                "perfil"
+        )) {
             Files.createDirectories(base.resolve(pasta));
         }
     }
 
-    public String salvar(MultipartFile arquivo, String pasta) throws IOException {
-        String pastaSeguro = (pasta == null || pasta.isBlank()) ? "documentos" : pasta.trim();
+    public String salvar(MultipartFile arquivo, String pasta)
+            throws IOException {
+
+        String pastaSeguro =
+                (pasta == null || pasta.isBlank())
+                        ? "documentos"
+                        : pasta.trim();
+
         String original = arquivo.getOriginalFilename();
-        String ext = original != null && original.contains(".")
-                ? original.substring(original.lastIndexOf('.'))
-                : "";
-        String nome = pastaSeguro + "_" + UUID.randomUUID() + ext;
-        Path dir = Paths.get(uploadDir, pastaSeguro);
+
+        String ext =
+                original != null && original.contains(".")
+                        ? original.substring(original.lastIndexOf('.'))
+                        : ".png";
+
+        String nome =
+                pastaSeguro + "_" + UUID.randomUUID() + ext;
+
+        Path dir = Paths.get(uploadDir, pastaSeguro).toAbsolutePath();
+
         Files.createDirectories(dir);
+
         Path dest = dir.resolve(nome);
-        arquivo.transferTo(dest);
-        return dest.toAbsolutePath().toString().replace("\\", "/");
+
+        arquivo.transferTo(dest.toFile());
+
+        return baseUrl +
+                "/arquivos/" +
+                pastaSeguro +
+                "/" +
+                nome;
     }
 }
