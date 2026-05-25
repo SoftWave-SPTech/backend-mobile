@@ -67,6 +67,9 @@ public class UsuarioEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "locais_seguros_ativo", nullable = false)
+    private Boolean locaisSegurosAtivo = false;
+
     public boolean isAdvogado() {
         if (tipoUsuario == null) {
             return false;
@@ -237,5 +240,13 @@ public class UsuarioEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Boolean getLocaisSegurosAtivo() {
+        return locaisSegurosAtivo;
+    }
+
+    public void setLocaisSegurosAtivo(Boolean locaisSegurosAtivo) {
+        this.locaisSegurosAtivo = locaisSegurosAtivo;
     }
 }

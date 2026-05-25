@@ -1,7 +1,6 @@
 package softwave.backend.backend_mobile.Entity;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -209,5 +208,12 @@ public class TransacaoEntity {
 
     public void setComprovante(ComprovanteEntity comprovante) {
         this.comprovante = comprovante;
+    }
+
+    @PrePersist
+    void prePersist() {
+        if (dataInsercao == null) {
+            dataInsercao = LocalDateTime.now();
+        }
     }
 }
