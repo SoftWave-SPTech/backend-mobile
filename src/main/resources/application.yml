@@ -3,7 +3,7 @@ spring:
     name: SoftWave-Finance
 
   datasource:
-    url: jdbc:mysql://localhost:3306/softwaveteste?createDatabaseIfNotExist=true&useTimezone=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/softwave?createDatabaseIfNotExist=true&useTimezone=true&serverTimezone=UTC
     username: root
     password: ${MYSQL_PASSWORD:220206}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -23,10 +23,12 @@ jwt:
 
 # Header X-Internal-Token para /internal/** (API-IA-MOBILE)
 app:
+  base-url: http://localhost:8080
   security:
     internal-token: ${INTERNAL_API_TOKEN:dev-internal-token}
   storage:
-    upload-dir: ${FILE_UPLOAD_DIR:./local-storage}
+    local:
+      base-dir: ./local-storage
   scheduler:
     atraso-cron: ${ATRASO_STATUS_CRON:0 0 2 * * *}
 

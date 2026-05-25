@@ -86,7 +86,7 @@ public class V1PerfilService {
     public Map<String, Object> fotoAdvogado(Jwt jwt, MultipartFile foto) throws IOException {
         UsuarioEntity u = carregarUsuario(jwt);
         String path = localStorageService.salvar(foto, "perfil");
-        u.setFoto("file://" + path);
+        u.setFoto(path);
         usuarioRepository.save(u);
         return Map.of("mensagem", "Foto atualizada com sucesso.", "fotoUrl", u.getFoto());
     }
@@ -102,7 +102,7 @@ public class V1PerfilService {
         m.put("endereco", montarEndereco(u));
         m.put("cpf", u.getCpf());
         m.put("clienteDesde", u.getCreatedAt() != null ? u.getCreatedAt().toLocalDate().toString() : null);
-        m.put("fotoPerfil", (u.getFoto() == null || u.getFoto().isBlank()) ? null : "/v1/cliente/perfil/foto");
+        m.put("fotoPerfil", u.getFoto());
         m.put("processoAtivo", Map.of());
         m.put("preferencias", Map.of("notificacoesAtivas", true));
         return m;
