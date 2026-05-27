@@ -73,7 +73,7 @@ public class V1PerfilService {
         m.put("nome", u.getNomeFantasia() != null ? u.getNomeFantasia() : u.getNome());
         m.put("email", u.getEmail());
         m.put("telefone", u.getTelefone());
-        m.put("oab", "");
+        m.put("oab", u.getOab() != null ? u.getOab() : "");
         m.put("endereco", montarEndereco(u));
         m.put("fotoPerfil", u.getFoto());
         Map<String, Object> banco = new LinkedHashMap<>();
@@ -102,6 +102,9 @@ public class V1PerfilService {
         }
         if (body.containsKey("email") && body.get("email") != null) {
             u.setEmail(body.get("email").toString().trim());
+        }
+        if (body.containsKey("oab") && body.get("oab") != null) {
+            u.setOab(body.get("oab").toString().trim());
         }
         u.setUpdatedAt(LocalDateTime.now());
         usuarioRepository.save(u);

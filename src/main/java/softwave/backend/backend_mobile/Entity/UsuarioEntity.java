@@ -61,6 +61,9 @@ public class UsuarioEntity {
     @Column(name = "razao_social")
     private String razaoSocial;
 
+    @Column(name = "oab")
+    private String oab;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -224,6 +227,14 @@ public class UsuarioEntity {
 
     public void setRazaoSocial(String razaoSocial) {
         this.razaoSocial = razaoSocial;
+    }
+
+    public String getOab() {
+        return oab;
+    }
+
+    public void setOab(String oab) {
+        this.oab = oab;
     }
 
     public LocalDateTime getCreatedAt() {
