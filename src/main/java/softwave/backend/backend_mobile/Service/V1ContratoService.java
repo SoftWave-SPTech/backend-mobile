@@ -178,7 +178,7 @@ public class V1ContratoService {
 
     private Map<String, Object> mapContrato(HonorarioEntity h) {
         ProcessoEntity p = h.getProcesso();
-        List<TransacaoEntity> ts = h.getTransacoes().stream()
+        List<TransacaoEntity> ts = transacaoRepository.findByHonorario_IdOrderByDataEmissaoAsc(h.getId()).stream()
                 .filter(t -> !TransacaoFinanceiroRules.isCancelada(t))
                 .toList();
         if (ts.isEmpty()) {

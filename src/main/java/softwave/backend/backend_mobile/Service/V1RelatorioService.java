@@ -143,11 +143,32 @@ public class V1RelatorioService {
         String margem = rec.signum() == 0 ? "0%"
                 : rec.subtract(des).multiply(BigDecimal.valueOf(100)).divide(rec, 1, RoundingMode.HALF_UP) + "%";
 
+        BigDecimal desAnterior = somaDespesaPaga(txAnterior);
+        int qtdReceitasPagasAnterior = contarReceitasPagas(txAnterior);
+        long ticketAnteriorCent = qtdReceitasPagasAnterior > 0
+                ? MoneyUtil.toCentavos(recAnterior.divide(BigDecimal.valueOf(qtdReceitasPagasAnterior), 2, RoundingMode.HALF_UP))
+                : 0L;
+
+        String margemAnterior = recAnterior.signum() == 0 ? "0%"
+                : recAnterior.subtract(desAnterior).multiply(BigDecimal.valueOf(100)).divide(recAnterior, 1, RoundingMode.HALF_UP) + "%";
+
+        String variacaoMargem = formatDeltaPercentual(parsePercentual(margem) - parsePercentual(margemAnterior));
+        String variacaoTicket = formatCrescimento(BigDecimal.valueOf(ticketCent), BigDecimal.valueOf(ticketAnteriorCent));
+
+        BigDecimal atrasadoPeriodo = somaAtrasadoPendenteNoPeriodo(tx, r[0], r[1], hoje);
+        BigDecimal atrasadoPeriodoAnterior = somaAtrasadoPendenteNoPeriodo(txAnterior, rAnterior[0], rAnterior[1], rAnterior[1]);
+        String variacaoInadimplencia = formatCrescimento(atrasadoPeriodo, atrasadoPeriodoAnterior);
+
+        String variacaoCrescimento = formatVariacaoAbsolutaBrl(rec, recAnterior);
+
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("margemLucro", kpiItem(margem, "+0%", "positivo"));
-        body.put("ticketMedio", kpiItem(String.valueOf(ticketCent), "+0%", "positivo"));
-        body.put("inadimplencia", kpiItem(inadimplencia, "+0%", inadimplencia.equals("0%") ? "positivo" : "negativo"));
-        body.put("crescimento", kpiItem(crescimento, "+0%", crescimento.startsWith("-") ? "negativo" : "positivo"));
+        body.put("margemLucro", kpiItem(margem, variacaoMargem, variacaoMargem.startsWith("-") ? "negativo" : "positivo"));
+        body.put("ticketMedio", kpiItem(String.valueOf(ticketCent), variacaoTicket, variacaoTicket.startsWith("-") ? "negativo" : "positivo"));
+        body.put("inadimplencia", kpiItem(
+                inadimplencia,
+                variacaoInadimplencia,
+                tipoVariacaoInadimplencia(variacaoInadimplencia)));
+        body.put("crescimento", kpiItem(crescimento, variacaoCrescimento, variacaoCrescimento.startsWith("-") ? "negativo" : "positivo"));
         return body;
     }
 
@@ -221,6 +242,81 @@ public class V1RelatorioService {
             rec = rec.add(MoneyUtil.toBigDecimalOrZero(t.getValor()));
         }
         return rec;
+    }
+
+    private static BigDecimal somaDespesaPaga(List<TransacaoEntity> tx) {
+        BigDecimal des = BigDecimal.ZERO;
+        for (TransacaoEntity t : tx) {
+            if (TransacaoFinanceiroRules.isCancelada(t) || !TransacaoFinanceiroRules.estaPago(t) || !TransacaoFinanceiroRules.isDespesa(t)) {
+                continue;
+            }
+            des = des.add(MoneyUtil.toBigDecimalOrZero(t.getValor()));
+        }
+        return des;
+    }
+
+    private static int contarReceitasPagas(List<TransacaoEntity> tx) {
+        int n = 0;
+        for (TransacaoEntity t : tx) {
+            if (TransacaoFinanceiroRules.isCancelada(t) || !TransacaoFinanceiroRules.estaPago(t) || !TransacaoFinanceiroRules.isReceita(t)) {
+                continue;
+            }
+            n++;
+        }
+        return n;
+    }
+
+    private static BigDecimal somaAtrasadoPendenteNoPeriodo(
+            List<TransacaoEntity> tx,
+            LocalDate inicio,
+            LocalDate fim,
+            LocalDate referencia
+    ) {
+        BigDecimal atrasado = BigDecimal.ZERO;
+        for (TransacaoEntity t : tx) {
+            if (TransacaoFinanceiroRules.isCancelada(t) || !TransacaoFinanceiroRules.isReceita(t) || TransacaoFinanceiroRules.estaPago(t)) {
+                continue;
+            }
+            if (t.getDataEmissao() == null || t.getDataEmissao().isBefore(inicio) || t.getDataEmissao().isAfter(fim)) {
+                continue;
+            }
+            if (t.getDataVencimento() != null && t.getDataVencimento().isBefore(referencia)) {
+                atrasado = atrasado.add(MoneyUtil.toBigDecimalOrZero(t.getValor()));
+            }
+        }
+        return atrasado;
+    }
+
+    private static double parsePercentual(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return 0;
+        }
+        try {
+            return Double.parseDouble(valor.replace("%", "").replace("+", "").trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static String formatDeltaPercentual(double deltaPontos) {
+        return (deltaPontos >= 0 ? "+" : "") + String.format(Locale.ROOT, "%.1f", deltaPontos) + "%";
+    }
+
+    private static String formatVariacaoAbsolutaBrl(BigDecimal atual, BigDecimal anterior) {
+        BigDecimal diff = atual.subtract(anterior);
+        if (diff.signum() == 0) {
+            return "+0%";
+        }
+        java.text.NumberFormat nf = java.text.NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        String formatted = nf.format(diff.abs());
+        return (diff.signum() >= 0 ? "+" : "-") + formatted.replace("\u00a0", " ");
+    }
+
+    private static String tipoVariacaoInadimplencia(String variacao) {
+        if (variacao == null || variacao.equals("+0%") || variacao.startsWith("-")) {
+            return "positivo";
+        }
+        return "negativo";
     }
 
     private static String formatCrescimento(BigDecimal atual, BigDecimal anterior) {
