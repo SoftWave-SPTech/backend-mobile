@@ -35,6 +35,7 @@ public class V1PagamentoService {
     private final UsuarioProcessoRepository usuarioProcessoRepository;
     private final ProcessoAccessService processoAccessService;
     private final StatusHistoricoService statusHistoricoService;
+    private final LocalStorageService localStorageService;
 
     public V1PagamentoService(
             TransacaoRepository transacaoRepository,
@@ -42,7 +43,8 @@ public class V1PagamentoService {
             NotificacaoRepository notificacaoRepository,
             UsuarioProcessoRepository usuarioProcessoRepository,
             ProcessoAccessService processoAccessService,
-            StatusHistoricoService statusHistoricoService
+            StatusHistoricoService statusHistoricoService,
+            LocalStorageService localStorageService
     ) {
         this.transacaoRepository = transacaoRepository;
         this.comprovanteRepository = comprovanteRepository;
@@ -50,6 +52,7 @@ public class V1PagamentoService {
         this.usuarioProcessoRepository = usuarioProcessoRepository;
         this.processoAccessService = processoAccessService;
         this.statusHistoricoService = statusHistoricoService;
+        this.localStorageService = localStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -147,17 +150,19 @@ public class V1PagamentoService {
         TransacaoEntity t = carregar(jwt, idStr);
         var comp = comprovanteRepository.findByTransacao_Id(t.getId())
                 .orElseThrow(() -> new NotFoundException("Comprovante não encontrado"));
-        Path path = Path.of(comp.getCaminhoArquivo());
+        Path path = localStorageService.resolverPath(comp.getCaminhoArquivo());
         if (!Files.exists(path)) {
             throw new NotFoundException("Arquivo do comprovante não encontrado no disco");
         }
-        String contentType = Files.probeContentType(path);
-        MediaType mt = (contentType == null || contentType.isBlank())
-                ? MediaType.APPLICATION_OCTET_STREAM
-                : MediaType.parseMediaType(contentType);
+        String contentType = localStorageService.detectarContentType(path, comp.getNomeArquivo());
+        MediaType mt = MediaType.parseMediaType(contentType);
+        String nomeDownload = comp.getNomeArquivo();
+        if (nomeDownload == null || nomeDownload.isBlank()) {
+            nomeDownload = path.getFileName().toString();
+        }
         return ResponseEntity.ok()
                 .contentType(mt)
-                .header("Content-Disposition", "inline; filename=\"" + path.getFileName() + "\"")
+                .header("Content-Disposition", "inline; filename=\"" + nomeDownload.replace("\"", "") + "\"")
                 .body(new PathResource(path));
     }
 

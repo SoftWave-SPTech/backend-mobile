@@ -114,10 +114,11 @@ public class V1PerfilService {
     @Transactional
     public Map<String, Object> fotoAdvogado(Jwt jwt, MultipartFile foto) throws IOException {
         UsuarioEntity u = carregarUsuario(jwt);
-        String path = localStorageService.salvar(foto, "perfil");
-        u.setFoto(path);
+        String caminhoRelativo = localStorageService.salvar(foto, "perfil");
+        String fotoUrl = localStorageService.urlPublica(caminhoRelativo);
+        u.setFoto(fotoUrl);
         usuarioRepository.save(u);
-        return Map.of("mensagem", "Foto atualizada com sucesso.", "fotoUrl", u.getFoto());
+        return Map.of("mensagem", "Foto atualizada com sucesso.", "fotoUrl", fotoUrl);
     }
 
     @Transactional(readOnly = true)

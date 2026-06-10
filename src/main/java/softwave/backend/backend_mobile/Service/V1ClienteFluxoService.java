@@ -290,7 +290,7 @@ public class V1ClienteFluxoService {
         notificarAdvogadosComprovantePendente(t);
         return Map.of(
                 "mensagem", "Comprovante enviado. Aguardando confirmação do escritório.",
-                "comprovanteUrl", "file://" + path
+                "comprovanteUrl", "/pagamentos/pag_" + t.getId() + "/comprovante"
         );
     }
 
