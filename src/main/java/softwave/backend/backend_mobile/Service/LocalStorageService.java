@@ -70,4 +70,28 @@ public class LocalStorageService {
                 "/" +
                 nome;
     }
+
+    public Path resolverPathArquivo(String caminhoOuUrl) {
+        if (caminhoOuUrl == null || caminhoOuUrl.isBlank()) {
+            throw new IllegalArgumentException("Caminho do arquivo vazio");
+        }
+
+        String relative = caminhoOuUrl.trim();
+        int marker = relative.indexOf("/arquivos/");
+        if (marker >= 0) {
+            relative = relative.substring(marker + "/arquivos/".length());
+        } else {
+            Path direct = Paths.get(relative);
+            if (Files.exists(direct)) {
+                return direct.toAbsolutePath().normalize();
+            }
+        }
+
+        Path base = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path resolved = base.resolve(relative).normalize();
+        if (!resolved.startsWith(base)) {
+            throw new IllegalArgumentException("Caminho do arquivo inválido");
+        }
+        return resolved;
+    }
 }

@@ -9,14 +9,14 @@ spring:
       max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:20MB}
 
   datasource:
-    url: jdbc:mysql://localhost:3306/softwave?createDatabaseIfNotExist=true&useTimezone=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/softwaveteste?createDatabaseIfNotExist=true&useTimezone=true&serverTimezone=UTC
     username: root
-    password: ${MYSQL_PASSWORD:220206}
+    password: ${MYSQL_PASSWORD:09241724}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
