@@ -19,6 +19,8 @@ import softwave.backend.backend_mobile.Exception.ForbiddenException;
 import softwave.backend.backend_mobile.Exception.NotFoundException;
 import softwave.backend.backend_mobile.api.dto.ApiErrorBody;
 
+import java.util.Locale;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -44,7 +46,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<ApiErrorBody> multipart(MultipartException e) {
         log.warn("Erro multipart: {}", e.getMessage());
-        return err(HttpStatus.UNPROCESSABLE_ENTITY, "CAMPOS_INVALIDOS", "Arquivo inválido ou ausente no upload.");
+        String msg = e.getMessage() != null && e.getMessage().toLowerCase(Locale.ROOT).contains("size")
+                ? "Arquivo muito grande. Envie uma imagem de até 15 MB ou use a galeria."
+                : "Arquivo inválido ou ausente no upload.";
+        return err(HttpStatus.UNPROCESSABLE_ENTITY, "CAMPOS_INVALIDOS", msg);
     }
 
     @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class})

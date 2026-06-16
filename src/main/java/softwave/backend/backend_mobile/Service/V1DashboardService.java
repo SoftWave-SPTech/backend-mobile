@@ -100,7 +100,8 @@ public class V1DashboardService {
                 : TransacaoSpecifications.processoEmOuAvulso(pids, uid);
         var page = transacaoRepository.findAll(
                 acesso,
-                PageRequest.of(0, Math.max(1, Math.min(limit, 50)), Sort.by(Sort.Direction.DESC, "dataEmissao"))
+                PageRequest.of(0, Math.max(1, Math.min(limit, 50)),
+                        Sort.by(Sort.Direction.DESC, "dataInsercao").and(Sort.by(Sort.Direction.DESC, "id")))
         );
         List<Map<String, Object>> list = page.getContent().stream().map(this::mapTransacaoLista).toList();
         return Map.of("transacoes", list);
@@ -113,7 +114,7 @@ public class V1DashboardService {
         m.put("subtitulo", t.getContraparte());
         m.put("valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(t.getValor())));
         m.put("tipo", mapTipoApi(t));
-        m.put("status", mapStatusApi(t));
+        m.put("status", TransacaoFinanceiroRules.mapStatusApi(t));
         m.put("categoria", TransacaoFinanceiroRules.categoriaOrDefault(t));
         m.put("data", t.getDataEmissao() != null ? t.getDataEmissao().toString() : null);
         m.put("icone", "cash");
@@ -128,19 +129,6 @@ public class V1DashboardService {
             return "despesa";
         }
         return "receita";
-    }
-
-    private static String mapStatusApi(TransacaoEntity t) {
-        if (TransacaoFinanceiroRules.isCancelada(t)) {
-            return "cancelado";
-        }
-        if (TransacaoFinanceiroRules.estaPago(t)) {
-            return "pago";
-        }
-        if (t.getDataVencimento() != null && t.getDataVencimento().isBefore(LocalDate.now())) {
-            return "atrasado";
-        }
-        return "pendente";
     }
 
     private static LocalDate[] periodoParaDatas(String periodo) {

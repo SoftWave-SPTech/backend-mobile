@@ -69,6 +69,7 @@ public class V1ClienteFluxoService {
         BigDecimal pendente = BigDecimal.ZERO;
         BigDecimal totalCtr = BigDecimal.ZERO;
         TransacaoEntity ultimaCobranca = null;
+        TransacaoEntity ultimaPaga = null;
 
         for (TransacaoEntity t : ts) {
             if (!TransacaoFinanceiroRules.isReceita(t) || TransacaoFinanceiroRules.isCancelada(t)) {
@@ -78,12 +79,18 @@ public class V1ClienteFluxoService {
             totalCtr = totalCtr.add(v);
             if (TransacaoFinanceiroRules.estaPago(t)) {
                 pago = pago.add(v);
+                if (ultimaPaga == null || compareRecencia(t, ultimaPaga) > 0) {
+                    ultimaPaga = t;
+                }
             } else {
                 pendente = pendente.add(v);
+                if (ultimaCobranca == null || compareVencimentoAsc(t, ultimaCobranca) < 0) {
+                    ultimaCobranca = t;
+                }
             }
-            if (ultimaCobranca == null || compareRecencia(t, ultimaCobranca) > 0) {
-                ultimaCobranca = t;
-            }
+        }
+        if (ultimaCobranca == null) {
+            ultimaCobranca = ultimaPaga;
         }
         int pct = totalCtr.signum() > 0
                 ? pago.multiply(BigDecimal.valueOf(100)).divide(totalCtr, 0, java.math.RoundingMode.HALF_UP).intValue()
@@ -104,6 +111,11 @@ public class V1ClienteFluxoService {
         body.put("parcelasRestantes", parcelasRestantes);
         body.put("notificacoesNaoLidas", naoLidas);
         if (ultimaCobranca != null) {
+            boolean paga = TransacaoFinanceiroRules.estaPago(ultimaCobranca);
+            java.time.LocalDate venc = ultimaCobranca.getDataVencimento() != null
+                    ? ultimaCobranca.getDataVencimento()
+                    : ultimaCobranca.getDataEmissao();
+            String statusCobranca = paga ? "pago" : (venc != null && venc.isBefore(java.time.LocalDate.now()) ? "atrasado" : "pendente");
             body.put("ultimaCobranca", Map.of(
                     "id", "cob_" + ultimaCobranca.getId(),
                     "descricao", ultimaCobranca.getTitulo() != null ? ultimaCobranca.getTitulo() : "Cobrança",
@@ -111,7 +123,7 @@ public class V1ClienteFluxoService {
                             ? ultimaCobranca.getDataVencimento().toString()
                             : (ultimaCobranca.getDataEmissao() != null ? ultimaCobranca.getDataEmissao().toString() : ""),
                     "valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(ultimaCobranca.getValor())),
-                    "status", TransacaoFinanceiroRules.estaPago(ultimaCobranca) ? "pago" : "pendente"
+                    "status", statusCobranca
             ));
         }
         return body;
@@ -201,6 +213,25 @@ public class V1ClienteFluxoService {
         m.put("parcela", parcela);
         m.put("totalParcelas", totalParcelas);
         return m;
+    }
+
+    private static int compareVencimentoAsc(TransacaoEntity a, TransacaoEntity b) {
+        var da = a.getDataVencimento() != null ? a.getDataVencimento() : a.getDataEmissao();
+        var db = b.getDataVencimento() != null ? b.getDataVencimento() : b.getDataEmissao();
+        if (da == null && db == null) {
+            return Integer.compare(a.getId(), b.getId());
+        }
+        if (da == null) {
+            return 1;
+        }
+        if (db == null) {
+            return -1;
+        }
+        int cmp = da.compareTo(db);
+        if (cmp != 0) {
+            return cmp;
+        }
+        return Integer.compare(a.getId(), b.getId());
     }
 
     private static int compareRecencia(TransacaoEntity a, TransacaoEntity b) {

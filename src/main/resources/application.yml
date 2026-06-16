@@ -2,6 +2,12 @@ spring:
   application:
     name: SoftWave-Finance
 
+  servlet:
+    multipart:
+      # Fotos da câmera (iPhone/Android) costumam passar de 1MB (default do Spring)
+      max-file-size: ${MULTIPART_MAX_FILE_SIZE:15MB}
+      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:20MB}
+
   datasource:
     url: jdbc:mysql://localhost:3306/softwaveteste?createDatabaseIfNotExist=true&useTimezone=true&serverTimezone=UTC
     username: root
@@ -10,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
@@ -23,10 +29,12 @@ jwt:
 
 # Header X-Internal-Token para /internal/** (API-IA-MOBILE)
 app:
+  base-url: http://localhost:8080
   security:
     internal-token: ${INTERNAL_API_TOKEN:dev-internal-token}
   storage:
-    upload-dir: ${FILE_UPLOAD_DIR:./local-storage}
+    local:
+      base-dir: ./local-storage
   scheduler:
     atraso-cron: ${ATRASO_STATUS_CRON:0 0 2 * * *}
 

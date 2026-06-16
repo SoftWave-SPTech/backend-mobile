@@ -30,7 +30,7 @@ public class V1NotificacaoService {
         Page<NotificacaoEntity> p = notificacaoRepository.findByUsuario_IdOrderByDataCriacaoDesc(
                 uid, PageRequest.of(Math.max(0, page - 1), Math.max(1, Math.min(limit, 50)), Sort.by(Sort.Direction.DESC, "dataCriacao"))
         );
-        return paraLista(p);
+        return paraLista(p, uid);
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +39,7 @@ public class V1NotificacaoService {
         Page<NotificacaoEntity> p = notificacaoRepository.findByUsuario_IdOrderByDataCriacaoDesc(
                 uid, PageRequest.of(0, 50, Sort.by(Sort.Direction.DESC, "dataCriacao"))
         );
-        return paraLista(p);
+        return paraLista(p, uid);
     }
 
     @Transactional
@@ -76,7 +76,7 @@ public class V1NotificacaoService {
         return Map.of("mensagem", "Notificação marcada como lida.");
     }
 
-    private Map<String, Object> paraLista(Page<NotificacaoEntity> p) {
+    private Map<String, Object> paraLista(Page<NotificacaoEntity> p, int uid) {
         List<Map<String, Object>> list = p.getContent().stream().map(n -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", "ntf_" + n.getId());
@@ -89,7 +89,7 @@ public class V1NotificacaoService {
             m.put("lida", Boolean.TRUE.equals(n.getLida()));
             return m;
         }).toList();
-        long naoLidas = p.getContent().stream().filter(x -> !Boolean.TRUE.equals(x.getLida())).count();
+        long naoLidas = notificacaoRepository.countByUsuario_IdAndLidaIsFalse(uid);
         return Map.of(
                 "total", p.getTotalElements(),
                 "naoLidas", naoLidas,

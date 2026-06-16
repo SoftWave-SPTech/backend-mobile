@@ -384,7 +384,7 @@ public class V1TransacaoService {
         m.put("subtitulo", t.getContraparte());
         m.put("valor", MoneyUtil.toCentavos(MoneyUtil.toBigDecimalOrZero(t.getValor())));
         m.put("tipo", t.getTipo());
-        m.put("status", t.getStatusFinanceiro());
+        m.put("status", TransacaoFinanceiroRules.mapStatusApi(t));
         m.put("categoria", TransacaoFinanceiroRules.categoriaOrDefault(t));
         HonorarioEntity h = t.getHonorario();
         if (h != null && h.getProcesso() != null) {
@@ -421,8 +421,12 @@ public class V1TransacaoService {
         m.put("observacoes", t.getObservacoes());
         m.put("comprovante", t.getComprovante() != null);
         m.put("comprovanteUrl", t.getComprovante() != null ? "/pagamentos/pag_" + t.getId() + "/comprovante" : null);
-        m.put("criadoEm", LocalDate.now().atStartOfDay().format(DateTimeFormatter.ISO_DATE_TIME));
-        m.put("atualizadoEm", LocalDate.now().atStartOfDay().format(DateTimeFormatter.ISO_DATE_TIME));
+        m.put("criadoEm", t.getDataInsercao() != null
+                ? t.getDataInsercao().format(DateTimeFormatter.ISO_DATE_TIME)
+                : LocalDate.now().atStartOfDay().format(DateTimeFormatter.ISO_DATE_TIME));
+        m.put("atualizadoEm", t.getDataInsercao() != null
+                ? t.getDataInsercao().format(DateTimeFormatter.ISO_DATE_TIME)
+                : LocalDate.now().atStartOfDay().format(DateTimeFormatter.ISO_DATE_TIME));
         return m;
     }
 

@@ -61,11 +61,17 @@ public class UsuarioEntity {
     @Column(name = "razao_social")
     private String razaoSocial;
 
+    @Column(name = "oab")
+    private String oab;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "locais_seguros_ativo", nullable = false)
+    private Boolean locaisSegurosAtivo = false;
 
     public boolean isAdvogado() {
         if (tipoUsuario == null) {
@@ -223,6 +229,14 @@ public class UsuarioEntity {
         this.razaoSocial = razaoSocial;
     }
 
+    public String getOab() {
+        return oab;
+    }
+
+    public void setOab(String oab) {
+        this.oab = oab;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -237,5 +251,13 @@ public class UsuarioEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Boolean getLocaisSegurosAtivo() {
+        return locaisSegurosAtivo;
+    }
+
+    public void setLocaisSegurosAtivo(Boolean locaisSegurosAtivo) {
+        this.locaisSegurosAtivo = locaisSegurosAtivo;
     }
 }

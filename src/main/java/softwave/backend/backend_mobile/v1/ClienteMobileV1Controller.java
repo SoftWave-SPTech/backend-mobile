@@ -1,6 +1,7 @@
 package softwave.backend.backend_mobile.v1;
 
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -59,13 +60,25 @@ public class ClienteMobileV1Controller {
         return perfilService.perfilCliente(jwt);
     }
 
+    @PutMapping("/perfil")
+    public Map<String, Object> atualizarPerfil(@AuthenticationPrincipal Jwt jwt, @RequestBody Map<String, Object> body) {
+        return perfilService.atualizarCliente(jwt, body);
+    }
+
     @PutMapping("/preferencias")
     public Map<String, Object> preferencias(@AuthenticationPrincipal Jwt jwt, @RequestBody Map<String, Object> body) {
         return perfilService.preferenciasCliente(jwt, body);
     }
 
-    @PostMapping("/perfil/foto")
-    public Map<String, Object> foto(@AuthenticationPrincipal Jwt jwt, @RequestPart("foto") MultipartFile foto) throws Exception {
+    @PostMapping(
+            value = "/perfil/foto",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public Map<String, Object> foto(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam("foto") MultipartFile foto
+    ) throws Exception {
+
         return perfilService.fotoCliente(jwt, foto);
     }
 
